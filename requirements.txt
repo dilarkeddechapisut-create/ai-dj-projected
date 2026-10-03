@@ -6,3 +6,4 @@ pandas
 gspread
 oauth2client
 requests
+streamlit-mic-recorder
