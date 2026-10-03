@@ -1,0 +1,8 @@
+streamlit
+spotipy
+google-generativeai
+plotly
+pandas
+gspread
+oauth2client
+requests
