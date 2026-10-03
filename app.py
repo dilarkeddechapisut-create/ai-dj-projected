@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+from streamlit_mic_recorder import speech_to_text
 
 # นำเข้า Service ต่างๆ
 from ai_service import get_playlist_from_ai
@@ -217,6 +218,8 @@ if 'current_track_name' not in st.session_state:
     st.session_state.current_track_name = "" 
 if 'current_track_index' not in st.session_state:
     st.session_state.current_track_index = 0
+if 'user_mood' not in st.session_state:
+    st.session_state.user_mood = ""
 
 # ==========================================
 # 3. Header ตรงกลาง
@@ -231,17 +234,36 @@ st.markdown("""
 # ==========================================
 # 4. Form Layout
 # ==========================================
-st.markdown('<div class="section-title">✍️ เล่าความรู้สึกของคุณผ่านข้อความ</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">✍️ เล่าความรู้สึกของคุณผ่านข้อความหรือเสียง</div>', unsafe_allow_html=True)
 
-# ช่องใส่ความรู้สึก
+# ปุ่มพูดเพื่อแปลงเป็นข้อความ (Speech to Text)
+st.markdown('<div class="input-label">🎙️ กดปุ่มเพื่อเริ่มพูด (รองรับภาษาไทย):</div>', unsafe_allow_html=True)
+
+spoken_text = speech_to_text(
+    language='th-TH',
+    start_prompt="🎙️ แตะเพื่อพูดความรู้สึก",
+    stop_prompt="⏹️ หยุดพูด (กำลังแปลงเป็นข้อความ...)",
+    just_once=True,
+    key='stt_input'
+)
+
+# หากมีการพูด ให้นำข้อความที่ได้ใส่ลงใน State
+if spoken_text:
+    st.session_state.user_mood = spoken_text
+
+# ช่องใส่ความรู้สึก (แสดงข้อความที่ถอดได้จากการพูด หรือพิมพ์เองได้)
 st.markdown('<div class="input-label">ความรู้สึกของคุณ:</div>', unsafe_allow_html=True)
 
 mood_text = st.text_area(
     "ความรู้สึกของคุณ:",
+    value=st.session_state.user_mood,
     placeholder="เช่น วันนี้เลิกงานแล้ว เหนื่อยมากๆ อยากหาเพลงชิลๆ ฟังผ่อนคลาย...",
     height=120,
     label_visibility="collapsed"
 )
+
+# อัปเดต State ล่าสุดเมื่อมีการพิมพ์แก้ไขข้อความใน Text Area
+st.session_state.user_mood = mood_text
 
 # Slider เลือกจำนวนเพลง
 st.markdown('<div class="input-label">🎵 จำนวนเพลงที่ต้องการสุ่มจัด:</div>', unsafe_allow_html=True)
@@ -291,7 +313,7 @@ if st.button("✨ ให้ AI DJ จัดเพลงให้ทันที"
                 st.session_state.playlist = valid_tracks
                 st.session_state.current_track_index = 0
     else:
-        st.warning("⚠️ กรุณาพิมพ์ความรู้สึกของคุณก่อนครับ")
+        st.warning("⚠️ กรุณาพิมพ์หรือพูดบอกความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
 # 5. ส่วนแสดงผล Playlist
