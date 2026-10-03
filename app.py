@@ -77,23 +77,54 @@ st.markdown("""
         align-items: center;
     }
 
-    /* ปรับแต่ง Floating Player ใหม่ หลบแถบ Manage App และจัด Padding ไม่ให้ล้น */
+    /* ==========================================
+       ปรับแก้ Floating Player ให้สวยงาม สมบูรณ์แบบ
+       ========================================== */
     div[data-testid="stVerticalBlock"] > div:has(div.floating-marker) {
         position: fixed !important;
-        bottom: 55px !important; /* ยกขึ้นให้พ้นแถบ Manage app ด้านล่าง */
+        bottom: 30px !important;
         right: 25px !important;
-        width: 360px !important;
-        background: #111d28 !important;
-        border: 2px solid #1DB954 !important;
-        padding: 16px 18px 18px 18px !important;
-        border-radius: 20px !important;
+        width: 350px !important;
+        height: auto !important;
+        background: rgba(18, 18, 18, 0.95) !important;
+        border: 1px solid #1DB954 !important;
+        padding: 14px 16px 10px 16px !important;
+        border-radius: 16px !important;
         z-index: 999999 !important;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7) !important;
+        backdrop-filter: blur(12px) !important;
+    }
+
+    /* ตกแต่งส่วน Audio Player ภายในกล่องลอยให้ฟิตพอดี */
+    div:has(div.floating-marker) div[data-testid="stAudio"] {
+        margin-top: -6px !important;
+        margin-bottom: 0px !important;
+        padding-bottom: 0px !important;
+    }
+
+    div:has(div.floating-marker) audio {
+        border-radius: 8px !important;
+        width: 100% !important;
+    }
+
+    /* ปรับแต่งปุ่มปิด (✖) */
+    div:has(div.floating-marker) button {
+        padding: 2px 8px !important;
+        height: auto !important;
+        min-height: 0px !important;
+        border-radius: 50% !important;
+        background-color: transparent !important;
+        border: none !important;
+        color: #b3b3b3 !important;
+    }
+    div:has(div.floating-marker) button:hover {
+        color: #ffffff !important;
+        background-color: rgba(255, 255, 255, 0.1) !important;
     }
 
     @media (max-width: 768px) {
         div[data-testid="stVerticalBlock"] > div:has(div.floating-marker) {
-            bottom: 20px !important;
+            bottom: 15px !important;
             right: 15px !important;
             left: 15px !important;
             width: calc(100vw - 30px) !important;
@@ -206,7 +237,7 @@ if len(st.session_state.playlist) > 0:
             else:
                 st.button("❌ ไม่มีตัวอย่าง", key=f"no_play_{i}", disabled=True, use_container_width=True)
             
-            # เปลี่ยนข้อความลิงก์เป็นปุ่มกด Streamlit แบบทางการ (st.link_button)
+            # ปุ่มเปิดฟังบน Spotify
             st.link_button(
                 "🟢 เปิดฟังบน Spotify", 
                 track_info.get('spotify_url', '#'), 
@@ -224,20 +255,24 @@ if len(st.session_state.playlist) > 0:
         st.info("ไม่สามารถสร้างกราฟสถิติได้")
 
 # ==========================================
-# 5. Floating Player (ปรับ UI และขยับพ้นขอบล่าง)
+# 5. Floating Player (UI กระชับ สวยงาม สมบูรณ์แบบ)
 # ==========================================
 if st.session_state.current_preview_url:
     with st.container():
         st.markdown('<div class="floating-marker"></div>', unsafe_allow_html=True)
         
-        c1, c2 = st.columns([8, 2])
+        c1, c2 = st.columns([85, 15])
         with c1:
-            st.markdown(f"<div style='color:#1DB954; font-weight:bold; font-size:14px; margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'>🎵 {st.session_state.current_track_name}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='color:#1DB954; font-weight:600; font-size:13px; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'>"
+                f"🎵 {st.session_state.current_track_name}</div>", 
+                unsafe_allow_html=True
+            )
         with c2:
             if st.button("✖", key="close_player"):
                 st.session_state.current_preview_url = None
                 st.session_state.current_track_name = ""
                 st.rerun()
                 
-        # เล่นเสียงแบบ Native ปรับปรุง CSS Padding แล้ว
+        # เล่นเสียง Streamlit Native
         st.audio(st.session_state.current_preview_url, format="audio/mp3", autoplay=True)
