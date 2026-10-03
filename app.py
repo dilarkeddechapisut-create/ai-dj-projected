@@ -30,23 +30,21 @@ st.markdown("""
     }
 
     /* ==========================================
-       จัดตำแหน่ง Search Box + Mic Button ให้อยู่ในกล่องด้านขวา
+       จัดตำแหน่ง Search Box + Mic Button ให้อยู่มุมขวาของกล่องข้อความ
        ========================================== */
-    /* Container หลัก */
+    /* 1. Container หลัก (ใช้ .st-key-search_input_container ตรงตามที่ Streamlit เรนเดอร์) */
+    .st-key-search_input_container,
+    div[class*="st-key-search_input_container"],
     div[data-key="search_input_container"] {
         position: relative !important;
         width: 100% !important;
     }
 
-    /* ลบ Gap/Margin ส่วนเกินของ Streamlit */
-    div[data-key="search_input_container"] [data-testid="stVerticalBlock"] {
-        gap: 0px !important;
-    }
-
-    /* 1. ช่องพิมพ์ข้อความ (Input Box) */
-    div[data-key="search_input_container"] [data-testid="stTextInput"] input {
+    /* 2. ช่องพิมพ์ข้อความ (เว้นพื้นที่ด้านขวาสำหรับปุ่มไมค์ + ข้อความแจ้งเตือน) */
+    .st-key-search_input_container [data-testid="stTextInput"] input,
+    div[class*="st-key-search_input_container"] [data-testid="stTextInput"] input {
         border-radius: 30px !important;
-        padding-right: 175px !important; /* เว้นระยะด้านขวาไม่ให้ข้อความทับไมค์และข้อความแจ้งเตือน */
+        padding-right: 180px !important; /* เว้นพื้นที่ด้านขวาไม่ให้ข้อความพิมพ์ทับปุ่มไมค์ */
         height: 52px !important;
         font-size: 16px !important;
         background-color: rgba(255, 255, 255, 0.95) !important;
@@ -56,30 +54,34 @@ st.markdown("""
         transition: all 0.3s ease !important;
     }
 
-    div[data-key="search_input_container"] [data-testid="stTextInput"] input:focus {
+    .st-key-search_input_container [data-testid="stTextInput"] input:focus,
+    div[class*="st-key-search_input_container"] [data-testid="stTextInput"] input:focus {
         border-color: #1DB954 !important;
         box-shadow: 0 0 15px rgba(29, 185, 84, 0.5) !important;
     }
 
-    /* 2. ดึงก้อน Mic Component ลงมาลอยอยู่ในช่องพิมพ์ด้านขวา */
-    div[data-key="search_input_container"] [data-testid="stElementContainer"]:has(iframe),
-    div[data-key="search_input_container"] [data-testid="stCustomComponentV1"] {
+    /* 3. ดึง Element ไมค์ (ตัวแรกใน Container) ออกมาลอยทับฝั่งขวาของกล่องข้อความ */
+    .st-key-search_input_container [data-testid="stElementContainer"]:first-child,
+    div[class*="st-key-search_input_container"] [data-testid="stElementContainer"]:first-child,
+    .st-key-search_input_container [data-testid="stCustomComponentV1"],
+    div[class*="st-key-search_input_container"] [data-testid="stCustomComponentV1"] {
         position: absolute !important;
         right: 8px !important;
         top: 50% !important;
         transform: translateY(-50%) !important;
-        z-index: 99 !important;
+        z-index: 9999 !important;
         margin: 0 !important;
         padding: 0 !important;
-        height: 38px !important;
         width: auto !important;
+        height: 38px !important;
         background: transparent !important;
     }
 
-    /* ปรับแต่ง iframe ของปุ่มไมค์ */
-    div[data-key="search_input_container"] iframe {
+    /* ปรับแต่ง iframe ของปุ่มไมค์ให้แสดงผลพอดี */
+    .st-key-search_input_container iframe,
+    div[class*="st-key-search_input_container"] iframe {
         height: 38px !important;
-        width: 165px !important;
+        width: 170px !important;
         border: none !important;
         background: transparent !important;
     }
@@ -209,13 +211,13 @@ st.title("🎧 AI DJ: จัดเพลย์ลิสต์ตามควา�
 st.markdown("บอกความรู้สึกของคุณมาให้เราฟัง แล้ว AI จะจัดเพลงที่ใช่ให้คุณเอง!")
 
 # ==========================================
-# 3. ส่วน Input (ซ้อนปุ่มไมค์ไว้ด้านขวาของกล่องข้อความ)
+# 3. ส่วน Input (ปุ่มไมค์ซ้อนอยู่มุมขวาของช่องพิมพ์)
 # ==========================================
 col1, col2 = st.columns([3, 1])
 
 with col1:
     with st.container(key="search_input_container"):
-        # 1. ปุ่มไมโครโฟน (กำหนด stop_prompt เพื่อแจ้งเตือนกดอีกครั้งเพื่อหยุด)
+        # 1. ปุ่มไมโครโฟน
         text_from_mic = speech_to_text(
             language='th-TH', 
             start_prompt="🎙️", 
@@ -274,7 +276,7 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                 st.session_state.playlist = valid_tracks
                 st.session_state.current_track_index = 0
     else:
-        st.warning("⚠️ กรุณาพิมพ์หรือพูดความรู้สึกของคุณก่อนครับ")
+        st.warning("⚠️️ กรุณาพิมพ์หรือพูดความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
 # 4. ส่วนแสดงผล
