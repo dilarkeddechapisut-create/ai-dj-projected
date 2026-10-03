@@ -1,12 +1,12 @@
 import streamlit as st
 import time
 
-# นำเข้า Service ต่างๆ ของคุณ (รวมถึง Service ใหม่)
+# นำเข้า Service ต่างๆ ของคุณ
 from ai_service import get_playlist_from_ai
 from spotify_service import search_spotify_track
 from stats_service import create_radar_chart
 from feedback_service import save_feedback
-from preview_service import get_track_preview  # <--- นำเข้าฟังก์ชันดึงพรีวิวเพลง
+from preview_service import get_track_preview
 
 # ==========================================
 # 1. ตั้งค่าหน้าเพจ & CSS
@@ -28,7 +28,7 @@ st.markdown("""
         100% {background-position: 0% 50%;}
     }
 
-    /* Flip Card */
+    /* Flip Card CSS */
     .flip-card {
         background-color: transparent;
         width: 100%;
@@ -77,20 +77,33 @@ st.markdown("""
         align-items: center;
     }
 
-    /* Floating Player (มุมขวาล่าง) */
+    /* =========================================
+       Floating Player (CSS รองรับคอมฯ และ มือถือ)
+       ========================================= */
     .floating-player {
         position: fixed;
         bottom: 20px;
         right: 20px;
-        background: rgba(0, 0, 0, 0.8);
+        background: rgba(15, 32, 39, 0.95);
         border: 2px solid #1DB954;
         padding: 15px;
-        border-radius: 20px;
-        z-index: 9999;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        border-radius: 16px;
+        z-index: 999999;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         backdrop-filter: blur(10px);
-        text-align: center;
-        width: 300px;
+        width: 320px;
+        transition: all 0.3s ease;
+    }
+    
+    /* การปรับขนาดอัตโนมัติเมื่ออยู่บนหน้าจอมือถือ */
+    @media (max-width: 768px) {
+        .floating-player {
+            bottom: 15px;
+            right: 15px;
+            left: 15px; /* ตรึงขอบซ้ายขวา */
+            width: calc(100vw - 30px); /* ยืดเต็มความกว้างมือถือ */
+            padding: 12px;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -102,12 +115,14 @@ if 'current_preview_url' not in st.session_state:
     st.session_state.current_preview_url = None
 if 'current_track_name' not in st.session_state:
     st.session_state.current_track_name = ""
+if 'play_timestamp' not in st.session_state:
+    st.session_state.play_timestamp = 0 # ใช้บังคับให้บราวเซอร์เริ่มเล่นเพลงใหม่
 
 st.title("🎧 AI DJ: จัดเพลย์ลิสต์ตามความรู้สึก")
 st.markdown("บอกความรู้สึกของคุณมาให้เราฟัง แล้ว AI จะจัดเพลงที่ใช่ให้คุณเอง!")
 
 # ==========================================
-# 3. ส่วน Input (Text, Mic, Slider)
+# 3. ส่วน Input
 # ==========================================
 col1, col2 = st.columns([2, 1])
 with col1:
@@ -132,19 +147,16 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                 st.divider()
                 
                 valid_tracks = []
+                cols = st.columns(3)
                 
-                cols = st.columns(3) # แสดงทีละ 3 คอลัมน์
                 for i, song in enumerate(ai_result['songs']):
-                    # พยายามดึงข้อมูลจาก Spotify
                     try:
                         track_info = search_spotify_track(song['title'], song['artist'])
                     except:
                         track_info = None
 
-                    # เรียกใช้ฟังก์ชันจาก preview_service.py ที่เราแยกไฟล์ไว้
                     img_url, preview_url, full_url = get_track_preview(song['title'], song['artist'])
                     
-                    # รวมข้อมูลเข้าด้วยกัน
                     if not track_info:
                         track_info = {
                             'name': song['title'],
@@ -162,7 +174,7 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                         valid_tracks.append(track_info)
                         col_idx = i % 3
                         with cols[col_idx]:
-                            # สร้าง Flip Card HTML
+                            # Card HTML
                             st.markdown(f"""
                             <div class="flip-card">
                               <div class="flip-card-inner">
@@ -179,16 +191,17 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                             </div>
                             """, unsafe_allow_html=True)
                             
-                            # ปุ่มกดฟังตัวอย่าง (อัปเดต Floating Player)
+                            # ปุ่มกดฟังเพลง (เมื่อกดจะดึงข้อมูลเข้า session_state แล้วสุ่ม timestamp ใหม่)
                             if track_info.get('preview_url'):
-                                if st.button(f"▶️ ฟังตัวอย่าง", key=f"play_{i}"):
+                                if st.button(f"▶️ ฟังตัวอย่าง", key=f"play_{i}", use_container_width=True):
                                     st.session_state.current_preview_url = track_info['preview_url']
                                     st.session_state.current_track_name = track_info['name']
+                                    st.session_state.play_timestamp = time.time() # อัปเดตเพื่อให้ Streamlit รู้ว่าเป็นเพลงใหม่
                                     st.rerun() 
                             else:
-                                st.button("❌ ไม่มีตัวอย่างเพลง", key=f"play_{i}", disabled=True)
+                                st.button("❌ ไม่มีตัวอย่างเพลง", key=f"play_{i}", disabled=True, use_container_width=True)
                             
-                            st.markdown(f"[เปิดฟังเวอร์ชันเต็ม]({track_info.get('spotify_url', '#')})")
+                            st.markdown(f"<div style='text-align:center;'>[เปิดฟังเวอร์ชันเต็ม]({track_info.get('spotify_url', '#')})</div>", unsafe_allow_html=True)
                 
                 # แสดงกราฟวิเคราะห์ (Stats)
                 st.divider()
@@ -198,7 +211,7 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                     if fig:
                         st.plotly_chart(fig, use_container_width=True)
                 except Exception as e:
-                    st.info("ไม่สามารถสร้างกราฟสถิติได้เนื่องจากข้อมูลจาก Spotify ไม่ครบถ้วน")
+                    st.info("ไม่สามารถสร้างกราฟสถิติได้เนื่องจากข้อมูลไม่ครบถ้วน")
 
                 # ระบบ Feedback
                 st.divider()
@@ -212,19 +225,31 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                     if st.button("👎 ยังไม่โดนใจ", use_container_width=True):
                         save_feedback(mood_text, False)
                         st.info("เราจะนำไปปรับปรุงให้ดีขึ้นครับ!")
-
     else:
         st.warning("⚠️ กรุณาพิมพ์ความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
-# 4. Floating Player Rendering
+# 4. Floating Player UI (อัปเดตใหม่)
 # ==========================================
 if st.session_state.current_preview_url:
+    # ฝัง Timestamp เข้าไปใน ID เครื่องเล่น เพื่อบังคับให้โหลด Component ใหม่ทุกครั้งที่กดปุ่ม
+    player_id = f"audio-player-{st.session_state.play_timestamp}"
+    
     floating_player_html = f"""
-    <div class="floating-player">
-        <h4 style="margin-top:0; color: #1DB954;">กำลังเล่น 🎵</h4>
-        <p style="font-weight: bold;">{st.session_state.current_track_name}</p>
-        <audio controls autoplay style="width: 100%;">
+    <div class="floating-player" id="floating-music-box">
+        <!-- ส่วนหัว (ชื่อเพลง + ปุ่มปิด) -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="color: #1DB954; font-weight: bold; font-size: 14px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">
+                🎵 กำลังเล่น: {st.session_state.current_track_name}
+            </div>
+            <button onclick="document.getElementById('floating-music-box').style.display='none'" 
+                    style="background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 0; line-height: 1;">
+                &times;
+            </button>
+        </div>
+        
+        <!-- แท็กเครื่องเล่นเสียง -->
+        <audio id="{player_id}" controls autoplay style="width: 100%; height: 45px; border-radius: 8px; outline: none;">
             <source src="{st.session_state.current_preview_url}" type="audio/mpeg">
             เบราว์เซอร์ของคุณไม่รองรับเครื่องเล่นเสียง
         </audio>
