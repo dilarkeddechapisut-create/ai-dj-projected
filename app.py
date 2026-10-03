@@ -18,12 +18,23 @@ BG_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07
 
 st.markdown(f"""
 <style>
-    /* ทำพื้นหลังหลักโปร่งใสเพื่อให้มองเห็นวิดีโอด้านหลัง */
+    /* ทำพื้นหลังหลักโปร่งใสเพื่อมองเห็นวิดีโอด้านหลัง */
     .stApp {{
         background: transparent !important;
         color: #ffffff;
     }}
-    
+
+    /* 📌 ซ่อนแถบดำ และปรับขนาด Custom Component (ปุ่มอัดเสียง) ให้พอดีกับตัวปุ่มเท่านั้น */
+    iframe,
+    div[data-testid="stCustomComponentV1"],
+    div[data-testid="stElementContainer"]:has(iframe) {{
+        width: fit-content !important;
+        max-width: fit-content !important;
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+    }}
+
     /* จัดสไตล์ตัววิดีโอเป็น Background เต็มจอ */
     #bg-video {{
         position: fixed;
@@ -35,7 +46,7 @@ st.markdown(f"""
         height: auto;
         z-index: -100;
         object-fit: cover;
-        filter: brightness(0.4); /* ปรับลดความสว่างลงเล็กน้อยเพื่อให้ข้อความอ่านง่ายขึ้น */
+        filter: brightness(0.4); /* ปรับความสว่างของวิดีโอเพื่อให้ข้อความอ่านง่าย */
     }}
 
     /* ตกแต่ง Header ตรงกลาง */
@@ -78,9 +89,9 @@ st.markdown(f"""
         text-shadow: 0 1px 5px rgba(0,0,0,0.8);
     }}
 
-    /* ปรับแต่ง Text Area ให้เข้ากับพื้นหลัง */
+    /* ปรับแต่ง Text Area ให้โปร่งแสงรับกับวิดีโอ */
     div[data-testid="stTextArea"] textarea {{
-        background-color: rgba(22, 27, 34, 0.8) !important;
+        background-color: rgba(22, 27, 34, 0.75) !important;
         color: #ffffff !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
         border-radius: 10px !important;
@@ -199,7 +210,7 @@ st.markdown(f"""
     }}
 </style>
 
-<!-- HTML Tag สำหรับเล่นวิดีโอพื้นหลัง -->
+<!-- HTML Tag วิดีโอพื้นหลัง -->
 <video autoplay loop muted playsinline id="bg-video">
     <source src="{BG_VIDEO_URL}" type="video/mp4">
 </video>
@@ -232,7 +243,7 @@ st.markdown("""
 # ==========================================
 # 4. Form Layout
 # ==========================================
-st.markdown('<div class="section-title">🎙️️ เล่าความรู้สึกของคุณผ่านเสียงหรือพิมพ์ข้อความ</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">🎙️ เล่าความรู้สึกของคุณผ่านเสียงหรือพิมพ์ข้อความ</div>', unsafe_allow_html=True)
 
 # 1. ปุ่มพูดความรู้สึก (ไมโครโฟน)
 text_from_mic = speech_to_text(
