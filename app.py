@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+from streamlit_mic_recorder import speech_to_text
 
 # นำเข้า Service ต่างๆ
 from ai_service import get_playlist_from_ai
@@ -160,16 +161,26 @@ st.markdown("บอกความรู้สึกของคุณมาใ�
 # ==========================================
 col1, col2 = st.columns([2, 1])
 with col1:
-    mood_text = st.text_input("💬 พิมพ์ความรู้สึกของคุณที่นี่:", placeholder="เช่น วันนี้เหนื่อยจังเลย...")
-    st.markdown("**หรือใช้ไมโครโฟนพูดความรู้สึก:**")
-    audio_input = st.audio_input("พูดความรู้สึก") 
+    st.markdown("🎙️ **พูดความรู้สึกผ่านไมโครโฟน:**")
+    text_from_mic = speech_to_text(
+        language='th-TH', 
+        start_prompt="🎙 กดเพื่อพูดความรู้สึก", 
+        stop_prompt="🛑 กำลังฟัง... (กดเพื่อหยุด)", 
+        just_once=False,
+        key='STT'
+    )
+    
+    default_text = text_from_mic if text_from_mic else ""
+    mood_text = st.text_input(
+        "💬 พิมพ์ความรู้สึกของคุณที่นี่:", 
+        value=default_text, 
+        placeholder="เช่น วันนี้เหนื่อยจังเลย..."
+    )
+
 with col2:
     num_songs = st.slider("🎵 จำนวนเพลง", min_value=1, max_value=10, value=5)
 
 if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="primary", use_container_width=True):
-    if audio_input:
-        st.info("กำลังประมวลผลเสียง... (ในเวอร์ชันนี้จะใช้ข้อความที่พิมพ์เป็นหลักก่อน)")
-        
     if mood_text:
         with st.spinner("AI กำลังวิเคราะห์ความรู้สึกและค้นหาเพลง..."):
             ai_result = get_playlist_from_ai(mood_text, num_songs)
@@ -206,7 +217,7 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                 st.session_state.playlist = valid_tracks
                 st.session_state.current_track_index = 0
     else:
-        st.warning("⚠️ กรุณาพิมพ์ความรู้สึกของคุณก่อนครับ")
+        st.warning("⚠️ กรุณาพิมพ์หรือพูดความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
 # 4. ส่วนแสดงผล
