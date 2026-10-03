@@ -2,7 +2,6 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import streamlit as st
 
-# ดึง Key จาก st.secrets (ตั้งค่าใน Streamlit Cloud หรือไฟล์ .streamlit/secrets.toml)
 client_id = st.secrets["SPOTIFY_CLIENT_ID"]
 client_secret = st.secrets["SPOTIFY_CLIENT_SECRET"]
 
@@ -12,7 +11,7 @@ sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
 ))
 
 def search_spotify_track(song_title, artist_name):
-    """ค้นหาเพลงและดึงข้อมูลพื้นฐาน + Audio Features สำหรับทำกราฟ"""
+    """ค้นหาเพลงและดึงข้อมูลพื้นฐาน"""
     query = f"track:{song_title} artist:{artist_name}"
     results = sp.search(q=query, type='track', limit=1)
     
@@ -23,17 +22,25 @@ def search_spotify_track(song_title, artist_name):
     track = tracks[0]
     track_id = track['id']
     
-    # ดึงค่า Audio Features (เพื่อนำไปทำกราฟ)
-    features = sp.audio_features(track_id)[0]
+    # ดึงค่า Audio Features (ใส่ Try-Except ดัก Error จากนโยบายใหม่ของ Spotify)
+    try:
+        features = sp.audio_features(track_id)[0]
+        energy = features['energy'] if features else 0.5
+        valence = features['valence'] if features else 0.5
+        danceability = features['danceability'] if features else 0.5
+    except Exception as e:
+        # หาก Spotify API บล็อก จะตั้งค่ากลางๆ ไว้ไม่ให้แอปพัง
+        print(f"Spotify Audio Features API ถูกจำกัด: {e}")
+        energy, valence, danceability = 0.5, 0.5, 0.5
     
     return {
         "id": track_id,
         "name": track['name'],
         "artist": track['artists'][0]['name'],
         "album_cover": track['album']['images'][0]['url'],
-        "preview_url": track.get('preview_url'), # ลิงก์ 30 วิ (บางเพลงอาจไม่มี ขึ้นอยู่กับลิขสิทธิ์)
+        "preview_url": track.get('preview_url'),
         "spotify_url": track['external_urls']['spotify'],
-        "energy": features['energy'] if features else 0,
-        "valence": features['valence'] if features else 0,
-        "danceability": features['danceability'] if features else 0
+        "energy": energy,
+        "valence": valence,
+        "danceability": danceability
     }
