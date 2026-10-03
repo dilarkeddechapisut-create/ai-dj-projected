@@ -24,6 +24,16 @@ st.markdown(f"""
         color: #ffffff;
     }}
 
+    /* ซ่อนพื้นหลังแถบดำของ Mic Recorder (Custom Component) และ iframe ทั้งหมด */
+    iframe,
+    div[data-testid="stCustomComponentV1"],
+    div[data-testid="element-container"],
+    div[data-testid="stVerticalBlock"] > div {{
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+    }}
+
     /* จัดสไตล์ตัววิดีโอเป็น Background เต็มจอ */
     #bg-video {{
         position: fixed;
@@ -232,7 +242,7 @@ st.markdown("""
 # ==========================================
 # 4. Form Layout
 # ==========================================
-st.markdown('<div class="section-title">🎙️ เล่าความรู้สึกของคุณผ่านเสียงหรือพิมพ์ข้อความ</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">🎙️️ เล่าความรู้สึกของคุณผ่านเสียงหรือพิมพ์ข้อความ</div>', unsafe_allow_html=True)
 
 # 1. ปุ่มพูดความรู้สึก (ไมโครโฟน)
 text_from_mic = speech_to_text(
