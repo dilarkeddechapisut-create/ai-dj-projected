@@ -7,7 +7,7 @@ import streamlit as st
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 # ใช้โมเดล gemini-1.5-flash รองรับ Text และ JSON Output ได้ดี
-model = genai.GenerativeModel('gemini-3.6-flash')
+model = genai.GenerativeModel('gemini-3.1-flash-lite')
 
 def get_playlist_from_ai(mood_text, num_songs):
     """วิเคราะห์ความรู้สึกและสร้าง Playlist คืนค่าเป็น JSON"""
