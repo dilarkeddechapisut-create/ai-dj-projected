@@ -1,7 +1,7 @@
 import streamlit as st
 import time
 
-# นำเข้า Service ต่างๆ (ใช้ของเดิมของคุณได้เลย)
+# นำเข้า Service ต่างๆ
 from ai_service import get_playlist_from_ai
 from spotify_service import search_spotify_track
 from stats_service import create_radar_chart
@@ -77,11 +77,12 @@ st.markdown("""
         align-items: center;
     }
 
-    /* Floating Player */
-    .floating-player {
+    /* ตรึง Floating Container ให้อยู่ล่างขวาของหน้าจอทั้งคอมและมือถือ */
+    div[data-testid="stVerticalBlock"] > div:has(div.floating-marker) {
         position: fixed;
         bottom: 20px;
         right: 20px;
+        width: 340px;
         background: rgba(15, 32, 39, 0.95);
         border: 2px solid #1DB954;
         padding: 15px;
@@ -89,22 +90,22 @@ st.markdown("""
         z-index: 999999;
         box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         backdrop-filter: blur(10px);
-        width: 320px;
     }
+
     @media (max-width: 768px) {
-        .floating-player {
-            bottom: 15px;
-            right: 15px;
-            left: 15px;
-            width: calc(100vw - 30px);
-            padding: 12px;
+        div[data-testid="stVerticalBlock"] > div:has(div.floating-marker) {
+            bottom: 10px;
+            right: 10px;
+            left: 10px;
+            width: calc(100vw - 20px);
+            padding: 10px;
         }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. State Management (ป้องกันเพลงหายตอนรีเฟรช)
+# 2. State Management
 # ==========================================
 if 'playlist' not in st.session_state:
     st.session_state.playlist = [] 
@@ -114,8 +115,6 @@ if 'current_preview_url' not in st.session_state:
     st.session_state.current_preview_url = None 
 if 'current_track_name' not in st.session_state:
     st.session_state.current_track_name = "" 
-if 'play_timestamp' not in st.session_state:
-    st.session_state.play_timestamp = 0
 
 st.title("🎧 AI DJ: จัดเพลย์ลิสต์ตามความรู้สึก")
 st.markdown("บอกความรู้สึกของคุณมาให้เราฟัง แล้ว AI จะจัดเพลงที่ใช่ให้คุณเอง!")
@@ -131,7 +130,6 @@ with col1:
 with col2:
     num_songs = st.slider("🎵 จำนวนเพลง", min_value=1, max_value=10, value=5)
 
-# เมื่อกดปุ่ม ให้ดึงข้อมูลมาเก็บไว้ใน session_state อย่างเดียว
 if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="primary", use_container_width=True):
     if audio_input:
         st.info("กำลังประมวลผลเสียง... (ในเวอร์ชันนี้จะใช้ข้อความที่พิมพ์เป็นหลักก่อน)")
@@ -169,13 +167,12 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                         track_info['reason'] = song['reason']
                         valid_tracks.append(track_info)
                 
-                # บันทึกข้อมูลลง session_state
                 st.session_state.playlist = valid_tracks
     else:
         st.warning("⚠️ กรุณาพิมพ์ความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
-# 4. ส่วนแสดงผล 
+# 4. ส่วนแสดงผล
 # ==========================================
 if len(st.session_state.playlist) > 0:
     st.success("🎉 จัดเพลย์ลิสต์เสร็จเรียบร้อย!")
@@ -205,7 +202,6 @@ if len(st.session_state.playlist) > 0:
                 if st.button(f"▶️ ฟังตัวอย่าง", key=f"play_{i}", use_container_width=True):
                     st.session_state.current_preview_url = track_info['preview_url']
                     st.session_state.current_track_name = track_info['name']
-                    st.session_state.play_timestamp = time.time() 
                     st.rerun() 
             else:
                 st.button("❌ ไม่มีตัวอย่าง", key=f"no_play_{i}", disabled=True, use_container_width=True)
@@ -222,27 +218,20 @@ if len(st.session_state.playlist) > 0:
         st.info("ไม่สามารถสร้างกราฟสถิติได้")
 
 # ==========================================
-# 5. Floating Player
+# 5. Floating Player (ใช้ st.audio ดั้งเดิมของ Streamlit)
 # ==========================================
 if st.session_state.current_preview_url:
-    player_id = f"audio-player-{st.session_state.play_timestamp}"
-    
-    floating_player_html = f"""
-    <div class="floating-player" id="floating-music-box">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div style="color: #1DB954; font-weight: bold; font-size: 14px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">
-                🎵 กำลังเล่น: {st.session_state.current_track_name}
-            </div>
-            <button onclick="document.getElementById('floating-music-box').style.display='none'" 
-                    style="background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 0; line-height: 1;">
-                &times;
-            </button>
-        </div>
+    with st.container():
+        st.markdown('<div class="floating-marker"></div>', unsafe_allow_html=True)
         
-        <!-- เอา type="audio/mpeg" ออก เพื่อให้บราวเซอร์ตรวจจับไฟล์ .m4a หรือ .mp3 เองอัตโนมัติ -->
-        <audio id="{player_id}" controls autoplay style="width: 100%; height: 45px; border-radius: 8px; outline: none;">
-            <source src="{st.session_state.current_preview_url}">
-        </audio>
-    </div>
-    """
-    st.markdown(floating_player_html, unsafe_allow_html=True)
+        c1, c2 = st.columns([8, 2])
+        with c1:
+            st.markdown(f"<span style='color:#1DB954; font-weight:bold; font-size:14px;'>🎵 {st.session_state.current_track_name}</span>", unsafe_allow_html=True)
+        with c2:
+            if st.button("✖", key="close_player"):
+                st.session_state.current_preview_url = None
+                st.session_state.current_track_name = ""
+                st.rerun()
+                
+        # ใช้ Native Audio Player รองรับทั้ง mp3, m4a และไฟล์ iTunes ลื่นไหลไม่มี Error
+        st.audio(st.session_state.current_preview_url, format="audio/mp3", autoplay=True)
