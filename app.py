@@ -10,91 +10,98 @@ from feedback_service import save_feedback
 from preview_service import get_track_preview
 
 # ==========================================
-# 1. ตั้งค่าหน้าเพจ & CSS
+# 1. ตั้งค่าหน้าเพจ & CSS + Video Background
 # ==========================================
-st.set_page_config(page_title="AI DJ Mood Matcher", page_icon="🎧", layout="wide")
+st.set_page_config(page_title="AI DJ Mood Matcher", page_icon="🎧", layout="centered")
 
-st.markdown("""
+BG_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_083109_283f3553-e28f-428b-a723-d639c617eb2b.mp4"
+
+st.markdown(f"""
 <style>
-    /* พื้นหลัง Gradient */
-    .stApp {
-        background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364);
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
-        color: white;
-    }
-    @keyframes gradientBG {
-        0% {background-position: 0% 50%;}
-        50% {background-position: 100% 50%;}
-        100% {background-position: 0% 50%;}
-    }
-
-    /* ==========================================
-       จัดตำแหน่ง Search Box + Mic Button ให้อยู่มุมขวาของกล่องข้อความ
-       ========================================== */
-    /* 1. Container หลัก (ใช้ .st-key-search_input_container ตรงตามที่ Streamlit เรนเดอร์) */
-    .st-key-search_input_container,
-    div[class*="st-key-search_input_container"],
-    div[data-key="search_input_container"] {
-        position: relative !important;
-        width: 100% !important;
-    }
-
-    /* 2. ช่องพิมพ์ข้อความ (เว้นพื้นที่ด้านขวาสำหรับปุ่มไมค์ + ข้อความแจ้งเตือน) */
-    .st-key-search_input_container [data-testid="stTextInput"] input,
-    div[class*="st-key-search_input_container"] [data-testid="stTextInput"] input {
-        border-radius: 30px !important;
-        padding-right: 180px !important; /* เว้นพื้นที่ด้านขวาไม่ให้ข้อความพิมพ์ทับปุ่มไมค์ */
-        height: 52px !important;
-        font-size: 16px !important;
-        background-color: rgba(255, 255, 255, 0.95) !important;
-        color: #111111 !important;
-        border: 2px solid rgba(255, 255, 255, 0.3) !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-        transition: all 0.3s ease !important;
-    }
-
-    .st-key-search_input_container [data-testid="stTextInput"] input:focus,
-    div[class*="st-key-search_input_container"] [data-testid="stTextInput"] input:focus {
-        border-color: #1DB954 !important;
-        box-shadow: 0 0 15px rgba(29, 185, 84, 0.5) !important;
-    }
-
-    /* 3. ดึง Element ไมค์ (ตัวแรกใน Container) ออกมาลอยทับฝั่งขวาของกล่องข้อความ */
-    .st-key-search_input_container [data-testid="stElementContainer"]:first-child,
-    div[class*="st-key-search_input_container"] [data-testid="stElementContainer"]:first-child,
-    .st-key-search_input_container [data-testid="stCustomComponentV1"],
-    div[class*="st-key-search_input_container"] [data-testid="stCustomComponentV1"] {
-        position: absolute !important;
-        right: 8px !important;
-        top: 50% !important;
-        transform: translateY(-50%) !important;
-        z-index: 9999 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        width: auto !important;
-        height: 38px !important;
+    /* ทำพื้นหลังหลักโปร่งใสเพื่อให้มองเห็นวิดีโอด้านหลัง */
+    .stApp {{
         background: transparent !important;
-    }
+        color: #ffffff;
+    }}
 
-    /* ปรับแต่ง iframe ของปุ่มไมค์ให้แสดงผลพอดี */
-    .st-key-search_input_container iframe,
-    div[class*="st-key-search_input_container"] iframe {
-        height: 38px !important;
-        width: 170px !important;
-        border: none !important;
-        background: transparent !important;
-    }
+    /* จัดสไตล์ตัววิดีโอเป็น Background เต็มจอ */
+    #bg-video {{
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        z-index: -100;
+        object-fit: cover;
+        filter: brightness(0.4); /* ปรับลดความสว่างลงเล็กน้อยเพื่อให้ข้อความอ่านง่ายขึ้น */
+    }}
+
+    /* ตกแต่ง Header ตรงกลาง */
+    .main-header {{
+        text-align: center;
+        margin-top: 10px;
+        margin-bottom: 5px;
+    }}
+    .main-header h1 {{
+        font-size: 2.3rem;
+        font-weight: 800;
+        color: #58a6ff;
+        display: inline-block;
+        margin-bottom: 8px;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    }}
+    .main-header p {{
+        color: #c9d1d9;
+        font-size: 1rem;
+        margin-bottom: 25px;
+        text-shadow: 0 1px 5px rgba(0,0,0,0.8);
+    }}
+
+    /* หัวข้อและ Label */
+    .section-title {{
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-top: 10px;
+        margin-bottom: 12px;
+        color: #ffffff;
+        text-shadow: 0 1px 5px rgba(0,0,0,0.8);
+    }}
+
+    .input-label {{
+        font-weight: 600;
+        color: #ffffff;
+        margin-top: 15px;
+        margin-bottom: 6px;
+        font-size: 0.95rem;
+        text-shadow: 0 1px 5px rgba(0,0,0,0.8);
+    }}
+
+    /* ปรับแต่ง Text Area ให้เข้ากับพื้นหลัง */
+    div[data-testid="stTextArea"] textarea {{
+        background-color: rgba(22, 27, 34, 0.8) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 10px !important;
+        font-size: 15px !important;
+        backdrop-filter: blur(5px);
+    }}
+    
+    div[data-testid="stTextArea"] textarea:focus {{
+        border-color: #ff5252 !important;
+        box-shadow: 0 0 10px rgba(255, 82, 82, 0.5) !important;
+    }}
 
     /* Flip Card */
-    .flip-card {
+    .flip-card {{
         background-color: transparent;
         width: 100%;
         height: 300px;
         perspective: 1000px;
         margin-bottom: 20px;
-    }
-    .flip-card-inner {
+    }}
+    .flip-card-inner {{
         position: relative;
         width: 100%;
         height: 100%;
@@ -103,28 +110,28 @@ st.markdown("""
         transform-style: preserve-3d;
         box-shadow: 0 4px 8px 0 rgba(0,0,0,0.5);
         border-radius: 15px;
-    }
-    .flip-card:hover .flip-card-inner {
+    }}
+    .flip-card:hover .flip-card-inner {{
         transform: rotateY(180deg);
-    }
-    .flip-card-front, .flip-card-back {
+    }}
+    .flip-card-front, .flip-card-back {{
         position: absolute;
         width: 100%;
         height: 100%;
         backface-visibility: hidden;
         border-radius: 15px;
-    }
-    .flip-card-front {
+    }}
+    .flip-card-front {{
         background-color: #bbb;
         color: black;
-    }
-    .flip-card-front img {
+    }}
+    .flip-card-front img {{
         width: 100%;
         height: 100%;
         object-fit: cover;
         border-radius: 15px;
-    }
-    .flip-card-back {
+    }}
+    .flip-card-back {{
         background-color: #1DB954;
         color: white;
         transform: rotateY(180deg);
@@ -133,13 +140,13 @@ st.markdown("""
         flex-direction: column;
         justify-content: center;
         align-items: center;
-    }
+    }}
 
     /* Floating Player Box */
     div[data-key="floating_player_box"],
     div.st-key-floating_player_box,
     div[class*="st-key-floating_player_box"],
-    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) {
+    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) {{
         position: fixed !important;
         bottom: 25px !important;
         right: 25px !important;
@@ -152,45 +159,50 @@ st.markdown("""
         padding: 12px 14px 10px 14px !important;
         z-index: 999999 !important;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
-    }
+    }}
 
     div[data-key="floating_player_box"] div[data-testid="stVerticalBlock"],
     div[class*="st-key-floating_player_box"] div[data-testid="stVerticalBlock"],
-    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) div[data-testid="stVerticalBlock"] {
+    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) div[data-testid="stVerticalBlock"] {{
         gap: 0.3rem !important;
-    }
+    }}
 
     div[data-key="floating_player_box"] div[data-testid="stAudio"],
     div[class*="st-key-floating_player_box"] div[data-testid="stAudio"],
-    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) div[data-testid="stAudio"] {
+    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) div[data-testid="stAudio"] {{
         margin: 2px 0px !important;
         padding: 0px !important;
-    }
+    }}
 
     div[data-key="floating_player_box"] audio,
     div[class*="st-key-floating_player_box"] audio,
-    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) audio {
+    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) audio {{
         border-radius: 8px !important;
         width: 100% !important;
-    }
+    }}
 
     div[data-key="floating_player_box"] button,
     div[class*="st-key-floating_player_box"] button,
-    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) button {
+    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) button {{
         border-radius: 8px !important;
-    }
+    }}
 
-    @media (max-width: 768px) {
+    @media (max-width: 768px) {{
         div[data-key="floating_player_box"],
         div[class*="st-key-floating_player_box"],
-        div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) {
+        div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) {{
             bottom: 15px !important;
             right: 15px !important;
             left: 15px !important;
             width: calc(100vw - 30px) !important;
-        }
-    }
+        }}
+    }}
 </style>
+
+<!-- HTML Tag สำหรับเล่นวิดีโอพื้นหลัง -->
+<video autoplay loop muted playsinline id="bg-video">
+    <source src="{BG_VIDEO_URL}" type="video/mp4">
+</video>
 """, unsafe_allow_html=True)
 
 # ==========================================
@@ -207,39 +219,54 @@ if 'current_track_name' not in st.session_state:
 if 'current_track_index' not in st.session_state:
     st.session_state.current_track_index = 0
 
-st.title("🎧 AI DJ: จัดเพลย์ลิสต์ตามความรู้สึก")
-st.markdown("บอกความรู้สึกของคุณมาให้เราฟัง แล้ว AI จะจัดเพลงที่ใช่ให้คุณเอง!")
+# ==========================================
+# 3. Header ตรงกลาง
+# ==========================================
+st.markdown("""
+<div class="main-header">
+    <h1>🎧 AI DJ Mood Matcher</h1>
+    <p>บอกความรู้สึกของคุณ แล้วให้ AI DJ คัดสรรบทเพลงพร้อมมุมมองเฉพาะคุณ</p>
+</div>
+""", unsafe_allow_html=True)
 
 # ==========================================
-# 3. ส่วน Input (ปุ่มไมค์ซ้อนอยู่มุมขวาของช่องพิมพ์)
+# 4. Form Layout
 # ==========================================
-col1, col2 = st.columns([3, 1])
+st.markdown('<div class="section-title">🎙️ เล่าความรู้สึกของคุณผ่านเสียงหรือพิมพ์ข้อความ</div>', unsafe_allow_html=True)
 
-with col1:
-    with st.container(key="search_input_container"):
-        # 1. ปุ่มไมโครโฟน
-        text_from_mic = speech_to_text(
-            language='th-TH', 
-            start_prompt="🎙️", 
-            stop_prompt="🛑 กดอีกครั้งเพื่อหยุด", 
-            just_once=False,
-            key='STT'
-        )
-        
-        default_text = text_from_mic if text_from_mic else ""
-        
-        # 2. ช่องพิมพ์ข้อความ
-        mood_text = st.text_input(
-            "ความรู้สึกของคุณ",
-            value=default_text, 
-            placeholder="พิมพ์หรือกดปุ่มไมค์เพื่อพูดความรู้สึก เช่น วันนี้เหนื่อยจัง...",
-            label_visibility="collapsed"
-        )
+# 1. ปุ่มพูดความรู้สึก (ไมโครโฟน)
+text_from_mic = speech_to_text(
+    language='th-TH', 
+    start_prompt="🎙️ กดเพื่อพูดความรู้สึก", 
+    stop_prompt="🛑 กดอีกครั้งเพื่อหยุด", 
+    just_once=False,
+    key='STT'
+)
 
-with col2:
-    num_songs = st.slider("🎵 จำนวนเพลง", min_value=1, max_value=10, value=5)
+# 2. ช่องใส่ความรู้สึก
+st.markdown('<div class="input-label">ความรู้สึกของคุณ:</div>', unsafe_allow_html=True)
+default_text = text_from_mic if text_from_mic else ""
 
-if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="primary", use_container_width=True):
+mood_text = st.text_area(
+    "ความรู้สึกของคุณ:",
+    value=default_text,
+    placeholder="เช่น วันนี้เลิกงานแล้ว เหนื่อยมากๆ อยากหาเพลงชิลๆ ฟังผ่อนคลาย...",
+    height=100,
+    label_visibility="collapsed"
+)
+
+# 3. Slider เลือกจำนวนเพลง
+st.markdown('<div class="input-label">🎵 จำนวนเพลงที่ต้องการสุ่มจัด:</div>', unsafe_allow_html=True)
+num_songs = st.slider(
+    "จำนวนเพลงที่ต้องการสุ่มจัด:",
+    min_value=3,
+    max_value=12,
+    value=5,
+    label_visibility="collapsed"
+)
+
+# 4. ปุ่มจัดเพลงทันที
+if st.button("✨ ให้ AI DJ จัดเพลงให้ทันที", type="primary", use_container_width=True):
     if mood_text:
         with st.spinner("AI กำลังวิเคราะห์ความรู้สึกและค้นหาเพลง..."):
             ai_result = get_playlist_from_ai(mood_text, num_songs)
@@ -276,10 +303,10 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                 st.session_state.playlist = valid_tracks
                 st.session_state.current_track_index = 0
     else:
-        st.warning("⚠️️ กรุณาพิมพ์หรือพูดความรู้สึกของคุณก่อนครับ")
+        st.warning("⚠️ กรุณาพิมพ์หรือพูดความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
-# 4. ส่วนแสดงผล
+# 5. ส่วนแสดงผล Playlist
 # ==========================================
 if len(st.session_state.playlist) > 0:
     st.success("🎉 จัดเพลย์ลิสต์เสร็จเรียบร้อย!")
@@ -331,7 +358,7 @@ if len(st.session_state.playlist) > 0:
         st.info("ไม่สามารถสร้างกราฟสถิติได้")
 
 # ==========================================
-# 5. Floating Player
+# 6. Floating Player
 # ==========================================
 if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
     with st.container(key="floating_player_box"):
