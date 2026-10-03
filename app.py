@@ -38,6 +38,17 @@ st.markdown(f"""
         filter: brightness(0.4);
     }}
 
+    /* ซ่อนพื้นหลังแถบดำรอบๆ ปุ่มไมโครโฟน */
+    div[data-testid="stCustomComponentV1"],
+    iframe[title*="streamlit_mic_recorder"],
+    iframe[title*="speech_to_text"],
+    iframe {{
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }}
+
     /* ตกแต่ง Header ตรงกลาง */
     .main-header {{
         text-align: center;
@@ -204,13 +215,15 @@ st.markdown(f"""
     <source src="{BG_VIDEO_URL}" type="video/mp4">
 </video>
 
-<!-- JS ช่วยทะลวงลบสีพื้นหลังดำข้างใน iframe ของ Mic Recorder -->
+<!-- JS ช่วยลบสีพื้นหลังดำทั้งนอกและใน iframe ของ Mic Recorder -->
 <script>
 (function fixMicIframeBg() {{
     function cleanIframe() {{
         var doc = window.parent ? window.parent.document : document;
         var iframes = doc.querySelectorAll('iframe');
         iframes.forEach(function(iframe) {{
+            iframe.style.backgroundColor = 'transparent';
+            iframe.style.background = 'transparent';
             try {{
                 var innerDoc = iframe.contentDocument || iframe.contentWindow.document;
                 if (innerDoc) {{
@@ -227,7 +240,7 @@ st.markdown(f"""
         }});
     }}
     cleanIframe();
-    setInterval(cleanIframe, 300);
+    setInterval(cleanIframe, 200);
 }})();
 </script>
 """, unsafe_allow_html=True)
