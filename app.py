@@ -234,24 +234,21 @@ st.markdown("""
 # ==========================================
 # 4. Form Layout
 # ==========================================
-st.markdown('<div class="section-title">✍️ เล่าความรู้สึกของคุณผ่านข้อความหรือเสียง</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">✍️ เล่าความรู้สึกของคุณผ่านข้อความ</div>', unsafe_allow_html=True)
 
-# ปุ่มพูดเพื่อแปลงเป็นข้อความ (Speech to Text)
-st.markdown('<div class="input-label">🎙️ กดปุ่มเพื่อเริ่มพูด (รองรับภาษาไทย):</div>', unsafe_allow_html=True)
-
+# ปุ่มพูดเพื่อแปลงเป็นข้อความ (ไม่ตกแต่ง)
 spoken_text = speech_to_text(
     language='th-TH',
-    start_prompt="🎙️ แตะเพื่อพูดความรู้สึก",
-    stop_prompt="⏹️ หยุดพูด (กำลังแปลงเป็นข้อความ...)",
+    start_prompt="🎙️️ พูด",
+    stop_prompt="⏹️ หยุด",
     just_once=True,
-    key='stt_input'
+    key='stt_button'
 )
 
-# หากมีการพูด ให้นำข้อความที่ได้ใส่ลงใน State
 if spoken_text:
     st.session_state.user_mood = spoken_text
 
-# ช่องใส่ความรู้สึก (แสดงข้อความที่ถอดได้จากการพูด หรือพิมพ์เองได้)
+# ช่องใส่ความรู้สึก
 st.markdown('<div class="input-label">ความรู้สึกของคุณ:</div>', unsafe_allow_html=True)
 
 mood_text = st.text_area(
@@ -262,7 +259,6 @@ mood_text = st.text_area(
     label_visibility="collapsed"
 )
 
-# อัปเดต State ล่าสุดเมื่อมีการพิมพ์แก้ไขข้อความใน Text Area
 st.session_state.user_mood = mood_text
 
 # Slider เลือกจำนวนเพลง
@@ -313,7 +309,7 @@ if st.button("✨ ให้ AI DJ จัดเพลงให้ทันที"
                 st.session_state.playlist = valid_tracks
                 st.session_state.current_track_index = 0
     else:
-        st.warning("⚠️ กรุณาพิมพ์หรือพูดบอกความรู้สึกของคุณก่อนครับ")
+        st.warning("⚠️ กรุณาพิมพ์ความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
 # 5. ส่วนแสดงผล Playlist
