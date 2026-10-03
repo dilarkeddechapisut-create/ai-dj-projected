@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+from streamlit_mic_recorder import speech_to_text
 
 # นำเข้า Service ต่างๆ
 from ai_service import get_playlist_from_ai
@@ -26,6 +27,64 @@ st.markdown("""
         0% {background-position: 0% 50%;}
         50% {background-position: 100% 50%;}
         100% {background-position: 0% 50%;}
+    }
+
+    /* ==========================================
+       จัดสไตล์ Search Box + Mic Button ซ้อนด้านขวา
+       ========================================== */
+    /* 1. ตั้งค่า Container หลัก */
+    div[data-key="search_input_container"],
+    div[data-key="search_input_container"] > div {
+        position: relative !important;
+    }
+
+    /* 2. ช่องพิมพ์ข้อความ (ทรงแคปซูล + เว้นพื้นที่ขวาให้ไมค์) */
+    div[data-key="search_input_container"] [data-testid="stTextInput"] input {
+        border-radius: 30px !important;
+        padding-right: 55px !important; /* เว้นระยะไม่ให้ข้อความทับไมค์ */
+        height: 52px !important;
+        font-size: 16px !important;
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        color: #111111 !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+        transition: all 0.3s ease !important;
+    }
+
+    div[data-key="search_input_container"] [data-testid="stTextInput"] input:focus {
+        border-color: #1DB954 !important;
+        box-shadow: 0 0 15px rgba(29, 185, 84, 0.5) !important;
+    }
+
+    /* 3. ดึงก้อน Mic (Element แรก) ออกมาลอยขวาบน Input Field */
+    div[data-key="search_input_container"] div[data-testid="stVerticalBlock"] > div:first-child,
+    div[data-key="search_input_container"] [data-testid="stElementContainer"]:has(iframe) {
+        position: absolute !important;
+        right: 8px !important;
+        top: 26px !important; /* จัดให้อยู่กึ่งกลางความสูงของ Input */
+        transform: translateY(-50%) !important;
+        z-index: 9999 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 42px !important;
+        height: 42px !important;
+    }
+
+    /* ปรับแต่ง iframe ของระบบบันทึกเสียง */
+    div[data-key="search_input_container"] iframe,
+    div[data-key="search_input_container"] [data-testid="stCustomComponentV1"] {
+        width: 42px !important;
+        height: 42px !important;
+        border: none !important;
+        overflow: hidden !important;
+    }
+
+    /* 4. 🎯 อนิเมชันเมื่อเมาส์ไปแตะ (Hover Effect) */
+    div[data-key="search_input_container"] div[data-testid="stVerticalBlock"] > div:first-child:hover,
+    div[data-key="search_input_container"] [data-testid="stElementContainer"]:has(iframe):hover {
+        transform: translateY(-50%) scale(1.2) !important; /* ขยายใหญ่ขึ้น */
+        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        filter: drop-shadow(0 0 10px #1DB954) !important; /* เรืองแสงสีเขียว Spotify */
     }
 
     /* Flip Card */
@@ -77,47 +136,55 @@ st.markdown("""
         align-items: center;
     }
 
-    /* ==========================================
-       จัดสไตล์ Floating Player (การ์ดชั้นเดียว ลอยสตรีม)
-       ========================================== */
+    /* Floating Player Box */
     div[data-key="floating_player_box"],
+    div.st-key-floating_player_box,
     div[class*="st-key-floating_player_box"],
-    div[data-testid="stVerticalBlock"]:has(div.floating-marker) {
+    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) {
         position: fixed !important;
-        bottom: 30px !important;
+        bottom: 25px !important;
         right: 25px !important;
-        width: 360px !important;
+        width: 350px !important;
+        max-width: calc(100vw - 40px) !important;
         height: auto !important;
         background: #121212 !important;
-        border: 2px solid #1DB954 !important;
+        border: 1.5px solid #1DB954 !important;
         border-radius: 16px !important;
-        padding: 14px 16px 12px 16px !important;
+        padding: 12px 14px 10px 14px !important;
         z-index: 999999 !important;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
     }
 
-    /* เคลียร์ Margin/Padding ของ Element ข้างในไม่ให้ซ้อนทับ */
     div[data-key="floating_player_box"] div[data-testid="stVerticalBlock"],
-    div[class*="st-key-floating_player_box"] div[data-testid="stVerticalBlock"] {
-        gap: 0.4rem !important;
+    div[class*="st-key-floating_player_box"] div[data-testid="stVerticalBlock"],
+    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) div[data-testid="stVerticalBlock"] {
+        gap: 0.3rem !important;
     }
 
     div[data-key="floating_player_box"] div[data-testid="stAudio"],
-    div[class*="st-key-floating_player_box"] div[data-testid="stAudio"] {
+    div[class*="st-key-floating_player_box"] div[data-testid="stAudio"],
+    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) div[data-testid="stAudio"] {
         margin: 2px 0px !important;
         padding: 0px !important;
     }
 
     div[data-key="floating_player_box"] audio,
-    div[class*="st-key-floating_player_box"] audio {
+    div[class*="st-key-floating_player_box"] audio,
+    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) audio {
         border-radius: 8px !important;
         width: 100% !important;
+    }
+
+    div[data-key="floating_player_box"] button,
+    div[class*="st-key-floating_player_box"] button,
+    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) button {
+        border-radius: 8px !important;
     }
 
     @media (max-width: 768px) {
         div[data-key="floating_player_box"],
         div[class*="st-key-floating_player_box"],
-        div[data-testid="stVerticalBlock"]:has(div.floating-marker) {
+        div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) {
             bottom: 15px !important;
             right: 15px !important;
             left: 15px !important;
@@ -145,20 +212,35 @@ st.title("🎧 AI DJ: จัดเพลย์ลิสต์ตามควา�
 st.markdown("บอกความรู้สึกของคุณมาให้เราฟัง แล้ว AI จะจัดเพลงที่ใช่ให้คุณเอง!")
 
 # ==========================================
-# 3. ส่วน Input & เรียก AI
+# 3. ส่วน Input (ซ้อนปุ่มไมค์ไว้ด้านขวาของช่องพิมพ์)
 # ==========================================
-col1, col2 = st.columns([2, 1])
+col1, col2 = st.columns([3, 1])
+
 with col1:
-    mood_text = st.text_input("💬 พิมพ์ความรู้สึกของคุณที่นี่:", placeholder="เช่น วันนี้เหนื่อยจังเลย...")
-    st.markdown("**หรือใช้ไมโครโฟนพูดความรู้สึก:**")
-    audio_input = st.audio_input("พูดความรู้สึก") 
+    with st.container(key="search_input_container"):
+        # 1. ปุ่มไมค์ (ตำแหน่ง Element แรก)
+        text_from_mic = speech_to_text(
+            language='th-TH', 
+            start_prompt="🎙️", 
+            stop_prompt="🛑", 
+            just_once=False,
+            key='STT'
+        )
+        
+        default_text = text_from_mic if text_from_mic else ""
+        
+        # 2. ช่องพิมพ์ข้อความ (ตำแหน่ง Element ที่สอง)
+        mood_text = st.text_input(
+            "ความรู้สึกของคุณ",
+            value=default_text, 
+            placeholder="พิมพ์หรือกดปุ่มไมค์เพื่อพูดความรู้สึก เช่น วันนี้เหนื่อยจัง...",
+            label_visibility="collapsed"
+        )
+
 with col2:
     num_songs = st.slider("🎵 จำนวนเพลง", min_value=1, max_value=10, value=5)
 
 if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="primary", use_container_width=True):
-    if audio_input:
-        st.info("กำลังประมวลผลเสียง... (ในเวอร์ชันนี้จะใช้ข้อความที่พิมพ์เป็นหลักก่อน)")
-        
     if mood_text:
         with st.spinner("AI กำลังวิเคราะห์ความรู้สึกและค้นหาเพลง..."):
             ai_result = get_playlist_from_ai(mood_text, num_songs)
@@ -195,7 +277,7 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                 st.session_state.playlist = valid_tracks
                 st.session_state.current_track_index = 0
     else:
-        st.warning("⚠️ กรุณาพิมพ์ความรู้สึกของคุณก่อนครับ")
+        st.warning("⚠️ กรุณาพิมพ์หรือพูดความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
 # 4. ส่วนแสดงผล
@@ -208,7 +290,6 @@ if len(st.session_state.playlist) > 0:
     cols = st.columns(3)
     for i, track_info in enumerate(st.session_state.playlist):
         with cols[i % 3]:
-            # แสดง Card
             st.markdown(f"""
             <div class="flip-card">
                 <div class="flip-card-inner">
@@ -225,7 +306,6 @@ if len(st.session_state.playlist) > 0:
             </div>
             """, unsafe_allow_html=True)
             
-            # ปุ่มฟังตัวอย่าง
             if track_info.get('preview_url'):
                 if st.button(f"▶️ ฟังตัวอย่าง", key=f"play_{i}", use_container_width=True):
                     st.session_state.current_preview_url = track_info['preview_url']
@@ -235,7 +315,6 @@ if len(st.session_state.playlist) > 0:
             else:
                 st.button("❌ ไม่มีตัวอย่าง", key=f"no_play_{i}", disabled=True, use_container_width=True)
             
-            # ปุ่มเปิดฟังบน Spotify
             st.link_button(
                 "🟢 เปิดฟังบน Spotify", 
                 track_info.get('spotify_url', '#'), 
@@ -253,7 +332,7 @@ if len(st.session_state.playlist) > 0:
         st.info("ไม่สามารถสร้างกราฟสถิติได้")
 
 # ==========================================
-# 5. Floating Player (การ์ดชั้นเดียว + คลิกค้างแล้วลากได้)
+# 5. Floating Player
 # ==========================================
 if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
     with st.container(key="floating_player_box"):
@@ -262,11 +341,10 @@ if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
         curr_idx = st.session_state.get('current_track_index', 0)
         total_songs = len(st.session_state.playlist)
         
-        # ส่วนหัวเครื่องเล่น: คลิกค้างที่ข้อความนี้เพื่อลากย้ายตำแหน่ง
         head_c1, head_c2 = st.columns([85, 15])
         with head_c1:
             st.markdown(
-                f"<div id='drag-handle' style='cursor: move; user-select: none; color:#1DB954; font-weight:bold; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:2px 0;'>"
+                f"<div id='drag-handle' style='cursor: grab; user-select: none; color:#1DB954; font-weight:bold; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:2px 0;'>"
                 f"⋮⋮ 🎵 {st.session_state.current_track_name} <span style='color:#888; font-size:11px;'>({curr_idx + 1}/{total_songs})</span></div>",
                 unsafe_allow_html=True
             )
@@ -276,10 +354,8 @@ if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
                 st.session_state.current_track_name = ""
                 st.rerun()
 
-        # ตัวเล่นเสียง
         st.audio(st.session_state.current_preview_url, format="audio/mp3", autoplay=True)
         
-        # ปุ่มควบคุม เล่นเพลงถัดไป / ย้อนกลับ
         ctrl_c1, ctrl_c2, ctrl_c3 = st.columns([1, 1, 1])
         with ctrl_c1:
             if st.button("⏮️ ก่อนหน้า", key="prev_track", use_container_width=True):
@@ -300,33 +376,36 @@ if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
                 st.session_state.current_track_name = next_track.get('name')
                 st.rerun()
 
-    # สคริปต์ JavaScript สำหรับผูก Event Drag & Drop เข้ากับ window.parent
     st.markdown("""
     <script>
-    (function attachDrag() {
-        function init() {
+    (function() {
+        function initDrag() {
             var doc = window.parent ? window.parent.document : document;
+            
             var player = doc.querySelector('div[data-key="floating_player_box"]') || 
                          doc.querySelector('div[class*="st-key-floating_player_box"]') ||
-                         doc.querySelector('div[data-testid="stVerticalBlock"]:has(div.floating-marker)');
+                         doc.querySelector('div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker)');
             
             var handle = doc.querySelector('#drag-handle');
             
             if (!player || !handle) {
-                setTimeout(init, 250);
+                setTimeout(initDrag, 200);
                 return;
             }
 
-            if (handle.getAttribute('data-drag-ready') === 'true') return;
-            handle.setAttribute('data-drag-ready', 'true');
+            if (handle.getAttribute('data-drag-attached') === 'true') return;
+            handle.setAttribute('data-drag-attached', 'true');
 
             var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
 
             handle.onmousedown = function(e) {
                 e = e || window.event;
                 e.preventDefault();
+                
                 pos3 = e.clientX;
                 pos4 = e.clientY;
+
+                var rect = player.getBoundingClientRect();
 
                 doc.onmouseup = function() {
                     doc.onmouseup = null;
@@ -336,24 +415,26 @@ if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
                 doc.onmousemove = function(e) {
                     e = e || window.event;
                     e.preventDefault();
+
                     pos1 = pos3 - e.clientX;
                     pos2 = pos4 - e.clientY;
                     pos3 = e.clientX;
                     pos4 = e.clientY;
 
-                    var currentTop = player.offsetTop;
-                    var currentLeft = player.offsetLeft;
+                    rect = player.getBoundingClientRect();
 
                     player.style.position = 'fixed';
-                    player.style.top = (currentTop - pos2) + 'px';
-                    player.style.left = (currentLeft - pos1) + 'px';
+                    player.style.top = (rect.top - pos2) + 'px';
+                    player.style.left = (rect.left - pos1) + 'px';
                     player.style.bottom = 'auto';
                     player.style.right = 'auto';
                     player.style.margin = '0';
                 };
             };
         }
-        init();
+
+        initDrag();
+        setTimeout(initDrag, 500);
     })();
     </script>
     """, unsafe_allow_html=True)
