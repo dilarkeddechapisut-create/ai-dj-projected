@@ -1,10 +1,12 @@
 import streamlit as st
+import time
 from streamlit_mic_recorder import speech_to_text
 
 # นำเข้า Service ต่างๆ
 from ai_service import get_playlist_from_ai
 from spotify_service import search_spotify_track
 from stats_service import create_radar_chart
+from feedback_service import save_feedback
 from preview_service import get_track_preview
 
 # ==========================================
@@ -22,6 +24,17 @@ st.markdown(f"""
         color: #ffffff;
     }}
 
+    /* ซ่อนแถบดำและตั้งค่า iframe ของระบบอัดเสียงให้โปร่งใส */
+    iframe,
+    iframe[title="streamlit_mic_recorder.speech_to_text"],
+    div[data-testid="stCustomComponentV1"],
+    div[data-testid="stElementContainer"]:has(iframe) {{
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }}
+
     /* จัดสไตล์ตัววิดีโอเป็น Background เต็มจอ */
     #bg-video {{
         position: fixed;
@@ -34,16 +47,6 @@ st.markdown(f"""
         z-index: -100;
         object-fit: cover;
         filter: brightness(0.4);
-    }}
-
-    /* ลบแถบพื้นหลังดำยาวของ Mic Recorder Component (แก้ไขปุ่มให้เหมือนรูปสอง) */
-    div[data-testid="stCustomComponentV1"],
-    div[data-testid="stCustomComponentV1"] iframe,
-    iframe[title*="speech_to_text"],
-    iframe[title*="streamlit_mic_recorder"] {{
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
     }}
 
     /* ตกแต่ง Header ตรงกลาง */
@@ -212,7 +215,7 @@ st.markdown(f"""
     <source src="{BG_VIDEO_URL}" type="video/mp4">
 </video>
 
-<!-- JS ช่วยลบสีพื้นหลังดำข้างใน iframe ของ Mic Recorder -->
+<!-- JS ช่วยทะลวงลบสีพื้นหลังดำข้างใน iframe ของ Mic Recorder -->
 <script>
 (function fixMicIframeBg() {{
     function cleanIframe() {{
@@ -225,6 +228,7 @@ st.markdown(f"""
                     if (innerDoc.body) {{
                         innerDoc.body.style.backgroundColor = 'transparent';
                         innerDoc.body.style.background = 'transparent';
+                        innerDoc.body.style.color = '#ffffff';
                     }}
                     if (innerDoc.documentElement) {{
                         innerDoc.documentElement.style.backgroundColor = 'transparent';
@@ -253,6 +257,10 @@ if 'current_track_name' not in st.session_state:
     st.session_state.current_track_name = "" 
 if 'current_track_index' not in st.session_state:
     st.session_state.current_track_index = 0
+if 'user_input_text' not in st.session_state:
+    st.session_state.user_input_text = ""
+if 'last_mic_text' not in st.session_state:
+    st.session_state.last_mic_text = ""
 
 # ==========================================
 # 3. Header ตรงกลาง
@@ -278,15 +286,19 @@ text_from_mic = speech_to_text(
     key='STT'
 )
 
-# 2. ช่องใส่ความรู้สึก
+# อัปเดตข้อความเมื่อมีการรับเสียงเข้ามาใหม่
+if text_from_mic and text_from_mic != st.session_state.last_mic_text:
+    st.session_state.user_input_text = text_from_mic
+    st.session_state.last_mic_text = text_from_mic
+
+# 2. ช่องใส่ความรู้สึก (ดึงค่ามาจาก session_state)
 st.markdown('<div class="input-label">ความรู้สึกของคุณ:</div>', unsafe_allow_html=True)
-default_text = text_from_mic if text_from_mic else ""
 
 mood_text = st.text_area(
     "ความรู้สึกของคุณ:",
-    value=default_text,
+    value=st.session_state.user_input_text,
     placeholder="เช่น วันนี้เลิกงานแล้ว เหนื่อยมากๆ อยากหาเพลงชิลๆ ฟังผ่อนคลาย...",
-    height=100,
+    height=110,
     label_visibility="collapsed"
 )
 
@@ -313,7 +325,7 @@ if st.button("✨ ให้ AI DJ จัดเพลงให้ทันที"
                 for song in ai_result['songs']:
                     try:
                         track_info = search_spotify_track(song['title'], song['artist'])
-                    except Exception:
+                    except:
                         track_info = None
 
                     img_url, preview_url, full_url = get_track_preview(song['title'], song['artist'])
@@ -327,20 +339,18 @@ if st.button("✨ ให้ AI DJ จัดเพลงให้ทันที"
                             'spotify_url': full_url if full_url else "#"
                         }
                     else:
-                        if preview_url: 
-                            track_info['preview_url'] = preview_url
-                        if img_url: 
-                            track_info['album_cover'] = img_url
-                        if not track_info.get('spotify_url') and full_url: 
-                            track_info['spotify_url'] = full_url
+                        if preview_url: track_info['preview_url'] = preview_url
+                        if img_url: track_info['album_cover'] = img_url
+                        if not track_info.get('spotify_url') and full_url: track_info['spotify_url'] = full_url
                     
-                    track_info['reason'] = song['reason']
-                    valid_tracks.append(track_info)
+                    if track_info:
+                        track_info['reason'] = song['reason']
+                        valid_tracks.append(track_info)
                 
                 st.session_state.playlist = valid_tracks
                 st.session_state.current_track_index = 0
     else:
-        st.warning("⚠️️ กรุณาพิมพ์หรือพูดความรู้สึกของคุณก่อนครับ")
+        st.warning("⚠️ กรุณาพิมพ์หรือพูดความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
 # 5. ส่วนแสดงผล Playlist
@@ -370,7 +380,7 @@ if len(st.session_state.playlist) > 0:
             """, unsafe_allow_html=True)
             
             if track_info.get('preview_url'):
-                if st.button("▶️ ฟังตัวอย่าง", key=f"play_{i}", use_container_width=True):
+                if st.button(f"▶️ ฟังตัวอย่าง", key=f"play_{i}", use_container_width=True):
                     st.session_state.current_preview_url = track_info['preview_url']
                     st.session_state.current_track_name = track_info['name']
                     st.session_state.current_track_index = i
@@ -391,7 +401,7 @@ if len(st.session_state.playlist) > 0:
         fig = create_radar_chart(st.session_state.playlist)
         if fig:
             st.plotly_chart(fig, use_container_width=True)
-    except Exception:
+    except:
         st.info("ไม่สามารถสร้างกราฟสถิติได้")
 
 # ==========================================
