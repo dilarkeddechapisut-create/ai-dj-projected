@@ -38,17 +38,6 @@ st.markdown(f"""
         filter: brightness(0.4);
     }}
 
-    /* ซ่อนพื้นหลังแถบดำรอบๆ ปุ่มไมโครโฟน */
-    div[data-testid="stCustomComponentV1"],
-    iframe[title*="streamlit_mic_recorder"],
-    iframe[title*="speech_to_text"],
-    iframe {{
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }}
-
     /* ตกแต่ง Header ตรงกลาง */
     .main-header {{
         text-align: center;
