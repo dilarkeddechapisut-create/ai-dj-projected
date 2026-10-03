@@ -24,16 +24,6 @@ st.markdown(f"""
         color: #ffffff;
     }}
 
-    /* ซ่อนแถบดำและตั้งค่า iframe ฝั่ง Parent ให้โปร่งใส */
-    iframe,
-    div[data-testid="stCustomComponentV1"],
-    div[data-testid="stElementContainer"]:has(iframe) {{
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }}
-
     /* จัดสไตล์ตัววิดีโอเป็น Background เต็มจอ */
     #bg-video {{
         position: fixed;
