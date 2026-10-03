@@ -29,6 +29,67 @@ st.markdown("""
         100% {background-position: 0% 50%;}
     }
 
+    /* ==========================================
+       จัดสไตล์ Search Box + Mic Button ให้อยู่ข้างใน
+       ========================================== */
+    /* กล่องครอบภายนอก */
+    div[data-key="search_input_container"] {
+        position: relative !important;
+    }
+
+    /* ตกแต่งช่องพิมพ์ข้อความ */
+    div[data-key="search_input_container"] input {
+        border-radius: 30px !important;
+        padding-right: 55px !important; /* เว้นพื้นที่ด้านขวาไม่ให้ข้อความทับไมค์ */
+        height: 50px !important;
+        font-size: 16px !important;
+        border: 2px solid rgba(255, 255, 255, 0.2) !important;
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        color: #111 !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+        transition: all 0.3s ease !important;
+    }
+    div[data-key="search_input_container"] input:focus {
+        border-color: #1DB954 !important;
+        box-shadow: 0 0 15px rgba(29, 185, 84, 0.4) !important;
+    }
+
+    /* จัดตำแหน่งปุ่มไมค์ให้อยู่ข้างในช่องพิมพ์ด้านขวา */
+    div[data-key="search_input_container"] iframe,
+    div[data-key="search_input_container"] button {
+        position: absolute !important;
+        right: 12px !important;
+        top: 28px !important;
+        z-index: 10 !important;
+        border: none !important;
+        background: transparent !important;
+        cursor: pointer !important;
+    }
+
+    /* ตกแต่งปุ่มไมค์และอนิเมชันตอน Hover */
+    div[data-key="search_input_container"] button {
+        font-size: 20px !important;
+        border-radius: 50% !important;
+        width: 38px !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.25s ease, box-shadow 0.25s ease !important;
+    }
+
+    /* 🎯 อนิเมชันเมื่อนำเมาส์ไปแตะ/ชี้ (Hover Effect) */
+    div[data-key="search_input_container"] button:hover {
+        transform: scale(1.25) rotate(-5deg) !important; /* ขยายใหญ่ขึ้นและเอียงเล็กน้อย */
+        background-color: rgba(29, 185, 84, 0.2) !important; /* แสดงวงกลมสีเขียวใสด้านหลัง */
+        box-shadow: 0 0 12px rgba(29, 185, 84, 0.6) !important; /* แสงเรืองรอบปุ่ม */
+    }
+
+    /* อนิเมชันขณะกำลังบันทึกเสียง (Active State) */
+    div[data-key="search_input_container"] button:active {
+        transform: scale(0.95) !important;
+    }
+
     /* Flip Card */
     .flip-card {
         background-color: transparent;
@@ -78,9 +139,7 @@ st.markdown("""
         align-items: center;
     }
 
-    /* ==========================================
-       จัดสไตล์ Floating Player (เฉพาะตัวเครื่องเล่นเพลงเท่านั้น)
-       ========================================== */
+    /* Floating Player Box */
     div[data-key="floating_player_box"],
     div.st-key-floating_player_box,
     div[class*="st-key-floating_player_box"],
@@ -99,7 +158,6 @@ st.markdown("""
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
     }
 
-    /* ลบขอบ/ระยะห่างส่วนเกินภายในกล่องลอย */
     div[data-key="floating_player_box"] div[data-testid="stVerticalBlock"],
     div[class*="st-key-floating_player_box"] div[data-testid="stVerticalBlock"],
     div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) div[data-testid="stVerticalBlock"] {
@@ -157,25 +215,31 @@ st.title("🎧 AI DJ: จัดเพลย์ลิสต์ตามควา�
 st.markdown("บอกความรู้สึกของคุณมาให้เราฟัง แล้ว AI จะจัดเพลงที่ใช่ให้คุณเอง!")
 
 # ==========================================
-# 3. ส่วน Input & เรียก AI
+# 3. ส่วน Input (ซ้อนไมค์ไว้ในช่องพิมพ์ + อนิเมชัน)
 # ==========================================
-col1, col2 = st.columns([2, 1])
+col1, col2 = st.columns([3, 1])
+
 with col1:
-    st.markdown("🎙️ **พูดความรู้สึกผ่านไมโครโฟน:**")
-    text_from_mic = speech_to_text(
-        language='th-TH', 
-        start_prompt="🎙 กดเพื่อพูดความรู้สึก", 
-        stop_prompt="🛑 กำลังฟัง... (กดเพื่อหยุด)", 
-        just_once=False,
-        key='STT'
-    )
-    
-    default_text = text_from_mic if text_from_mic else ""
-    mood_text = st.text_input(
-        "💬 พิมพ์ความรู้สึกของคุณที่นี่:", 
-        value=default_text, 
-        placeholder="เช่น วันนี้เหนื่อยจังเลย..."
-    )
+    # ใช้ Container ครอบไว้เพื่อจัด CSS
+    with st.container(key="search_input_container"):
+        # ปุ่มไมโครโฟน
+        text_from_mic = speech_to_text(
+            language='th-TH', 
+            start_prompt="🎙️", 
+            stop_prompt="🛑", 
+            just_once=False,
+            key='STT'
+        )
+        
+        default_text = text_from_mic if text_from_mic else ""
+        
+        # ช่องพิมพ์ข้อความ
+        mood_text = st.text_input(
+            "ความรู้สึกของคุณ",
+            value=default_text, 
+            placeholder="พิมพ์หรือกดปุ่มไมค์เพื่อพูดความรู้สึก เช่น วันนี้เหนื่อยจัง...",
+            label_visibility="collapsed"
+        )
 
 with col2:
     num_songs = st.slider("🎵 จำนวนเพลง", min_value=1, max_value=10, value=5)
@@ -275,7 +339,7 @@ if len(st.session_state.playlist) > 0:
         st.info("ไม่สามารถสร้างกราฟสถิติได้")
 
 # ==========================================
-# 5. Floating Player (ลอยเฉพาะเครื่องเล่น + คลิกค้างลากย้ายได้)
+# 5. Floating Player
 # ==========================================
 if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
     with st.container(key="floating_player_box"):
@@ -284,7 +348,6 @@ if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
         curr_idx = st.session_state.get('current_track_index', 0)
         total_songs = len(st.session_state.playlist)
         
-        # Header ของกล่อง: คลิกค้างที่ข้อความนี้เพื่อลากย้ายตำแหน่ง
         head_c1, head_c2 = st.columns([85, 15])
         with head_c1:
             st.markdown(
@@ -298,10 +361,8 @@ if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
                 st.session_state.current_track_name = ""
                 st.rerun()
 
-        # ตัวเล่นเสียง
         st.audio(st.session_state.current_preview_url, format="audio/mp3", autoplay=True)
         
-        # ปุ่มควบคุม เล่นเพลงถัดไป / ย้อนกลับ
         ctrl_c1, ctrl_c2, ctrl_c3 = st.columns([1, 1, 1])
         with ctrl_c1:
             if st.button("⏮️ ก่อนหน้า", key="prev_track", use_container_width=True):
@@ -322,7 +383,6 @@ if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
                 st.session_state.current_track_name = next_track.get('name')
                 st.rerun()
 
-    # JavaScript เพิ่มระบบ Drag & Drop ลากขยับได้แม่นยำ
     st.markdown("""
     <script>
     (function() {
