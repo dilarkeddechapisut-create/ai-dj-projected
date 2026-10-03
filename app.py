@@ -78,28 +78,26 @@ st.markdown("""
     }
 
     /* ==========================================
-       ปรับแก้ Floating Player ให้สวยงาม สมบูรณ์แบบ
+       Floating Player Container (ไร้แถบซ้อน + ลากขยับได้)
        ========================================== */
     div[data-testid="stVerticalBlock"] > div:has(div.floating-marker) {
         position: fixed !important;
         bottom: 30px !important;
         right: 25px !important;
-        width: 350px !important;
+        width: 360px !important;
         height: auto !important;
-        background: rgba(18, 18, 18, 0.95) !important;
-        border: 1px solid #1DB954 !important;
-        padding: 14px 16px 10px 16px !important;
+        background: #121212 !important;
+        border: 1.5px solid #1DB954 !important;
+        padding: 12px 14px 10px 14px !important;
         border-radius: 16px !important;
         z-index: 999999 !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7) !important;
-        backdrop-filter: blur(12px) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
     }
 
-    /* ตกแต่งส่วน Audio Player ภายในกล่องลอยให้ฟิตพอดี */
+    /* ลบ Padding/Margin เกินของ Audio Player ตัวใน */
     div:has(div.floating-marker) div[data-testid="stAudio"] {
-        margin-top: -6px !important;
-        margin-bottom: 0px !important;
-        padding-bottom: 0px !important;
+        margin: 4px 0px !important;
+        padding: 0px !important;
     }
 
     div:has(div.floating-marker) audio {
@@ -107,19 +105,9 @@ st.markdown("""
         width: 100% !important;
     }
 
-    /* ปรับแต่งปุ่มปิด (✖) */
+    /* ตกแต่งปุ่มกดภายใน Floating Player */
     div:has(div.floating-marker) button {
-        padding: 2px 8px !important;
-        height: auto !important;
-        min-height: 0px !important;
-        border-radius: 50% !important;
-        background-color: transparent !important;
-        border: none !important;
-        color: #b3b3b3 !important;
-    }
-    div:has(div.floating-marker) button:hover {
-        color: #ffffff !important;
-        background-color: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 8px !important;
     }
 
     @media (max-width: 768px) {
@@ -144,6 +132,8 @@ if 'current_preview_url' not in st.session_state:
     st.session_state.current_preview_url = None 
 if 'current_track_name' not in st.session_state:
     st.session_state.current_track_name = "" 
+if 'current_track_index' not in st.session_state:
+    st.session_state.current_track_index = 0
 
 st.title("🎧 AI DJ: จัดเพลย์ลิสต์ตามความรู้สึก")
 st.markdown("บอกความรู้สึกของคุณมาให้เราฟัง แล้ว AI จะจัดเพลงที่ใช่ให้คุณเอง!")
@@ -197,11 +187,12 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                         valid_tracks.append(track_info)
                 
                 st.session_state.playlist = valid_tracks
+                st.session_state.current_track_index = 0
     else:
         st.warning("⚠️ กรุณาพิมพ์ความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
-# 4. ส่วนแสดงผล 
+# 4. ส่วนแสดงผล
 # ==========================================
 if len(st.session_state.playlist) > 0:
     st.success("🎉 จัดเพลย์ลิสต์เสร็จเรียบร้อย!")
@@ -233,6 +224,7 @@ if len(st.session_state.playlist) > 0:
                 if st.button(f"▶️ ฟังตัวอย่าง", key=f"play_{i}", use_container_width=True):
                     st.session_state.current_preview_url = track_info['preview_url']
                     st.session_state.current_track_name = track_info['name']
+                    st.session_state.current_track_index = i
                     st.rerun() 
             else:
                 st.button("❌ ไม่มีตัวอย่าง", key=f"no_play_{i}", disabled=True, use_container_width=True)
@@ -255,24 +247,84 @@ if len(st.session_state.playlist) > 0:
         st.info("ไม่สามารถสร้างกราฟสถิติได้")
 
 # ==========================================
-# 5. Floating Player (UI กระชับ สวยงาม สมบูรณ์แบบ)
+# 5. Floating Player (ลากขยับได้ + ปุ่มเปลี่ยนเพลง)
 # ==========================================
-if st.session_state.current_preview_url:
+if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
     with st.container():
         st.markdown('<div class="floating-marker"></div>', unsafe_allow_html=True)
         
-        c1, c2 = st.columns([85, 15])
-        with c1:
+        curr_idx = st.session_state.get('current_track_index', 0)
+        total_songs = len(st.session_state.playlist)
+        
+        # Header ของกล่อง สามารถคลิกลากย้ายตำแหน่งได้
+        head_c1, head_c2 = st.columns([85, 15])
+        with head_c1:
             st.markdown(
-                f"<div style='color:#1DB954; font-weight:600; font-size:13px; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'>"
-                f"🎵 {st.session_state.current_track_name}</div>", 
+                f"<div id='drag-handle' style='cursor: move; user-select: none; color:#1DB954; font-weight:bold; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;'>"
+                f"⠿ 🎵 {st.session_state.current_track_name} <span style='color:#888; font-size:11px;'>({curr_idx + 1}/{total_songs})</span></div>",
                 unsafe_allow_html=True
             )
-        with c2:
-            if st.button("✖", key="close_player"):
+        with head_c2:
+            if st.button("✖", key="close_player", use_container_width=True):
                 st.session_state.current_preview_url = None
                 st.session_state.current_track_name = ""
                 st.rerun()
-                
-        # เล่นเสียง Streamlit Native
+
+        # ตัวเล่นเสียง
         st.audio(st.session_state.current_preview_url, format="audio/mp3", autoplay=True)
+        
+        # ปุ่มควบคุม เล่นเพลงถัดไป / ย้อนกลับ
+        ctrl_c1, ctrl_c2, ctrl_c3 = st.columns([1, 1, 1])
+        with ctrl_c1:
+            if st.button("⏮️ ก่อนหน้า", key="prev_track", use_container_width=True):
+                prev_idx = (curr_idx - 1) % total_songs
+                st.session_state.current_track_index = prev_idx
+                next_track = st.session_state.playlist[prev_idx]
+                st.session_state.current_preview_url = next_track.get('preview_url')
+                st.session_state.current_track_name = next_track.get('name')
+                st.rerun()
+        with ctrl_c2:
+            st.markdown("<div style='text-align:center; font-size:11px; color:#888; line-height:35px;'>AI DJ</div>", unsafe_allow_html=True)
+        with ctrl_c3:
+            if st.button("ถัดไป ⏭️️", key="next_track", use_container_width=True):
+                next_idx = (curr_idx + 1) % total_songs
+                st.session_state.current_track_index = next_idx
+                next_track = st.session_state.playlist[next_idx]
+                st.session_state.current_preview_url = next_track.get('preview_url')
+                st.session_state.current_track_name = next_track.get('name')
+                st.rerun()
+
+    # JavaScript เพิ่มฟังก์ชันลากย้ายตำแหน่ง
+    st.markdown("""
+    <script>
+    setTimeout(function() {
+        var player = document.querySelector('div[data-testid="stVerticalBlock"] > div:has(div.floating-marker)');
+        var handle = document.getElementById('drag-handle');
+        if (player && handle) {
+            var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            handle.onmousedown = function(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = function() {
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                };
+                document.onmousemove = function(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    player.style.top = (player.offsetTop - pos2) + "px";
+                    player.style.left = (player.offsetLeft - pos1) + "px";
+                    player.style.bottom = 'auto';
+                    player.style.right = 'auto';
+                };
+            };
+        }
+    }, 300);
+    </script>
+    """, unsafe_allow_html=True)
