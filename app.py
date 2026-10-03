@@ -104,14 +104,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. State Management (สำคัญมาก ป้องกันเพลงหายตอนรีเฟรช)
+# 2. State Management (ป้องกันเพลงหายตอนรีเฟรช)
 # ==========================================
 if 'playlist' not in st.session_state:
-    st.session_state.playlist = [] # เก็บรายชื่อเพลงที่ AI จัดให้
+    st.session_state.playlist = [] 
 if 'ai_message' not in st.session_state:
-    st.session_state.ai_message = "" # เก็บข้อความจาก AI
+    st.session_state.ai_message = "" 
 if 'current_preview_url' not in st.session_state:
-    st.session_state.current_preview_url = None # เก็บ URL เพลงที่กำลังกดฟัง
+    st.session_state.current_preview_url = None 
 if 'current_track_name' not in st.session_state:
     st.session_state.current_track_name = "" 
 if 'play_timestamp' not in st.session_state:
@@ -121,16 +121,21 @@ st.title("🎧 AI DJ: จัดเพลย์ลิสต์ตามควา�
 st.markdown("บอกความรู้สึกของคุณมาให้เราฟัง แล้ว AI จะจัดเพลงที่ใช่ให้คุณเอง!")
 
 # ==========================================
-# 3. ส่วน Input & เรียก AI
+# 3. ส่วน Input & เรียก AI (เติมปุ่มไมค์กลับมาแล้ว!)
 # ==========================================
 col1, col2 = st.columns([2, 1])
 with col1:
     mood_text = st.text_input("💬 พิมพ์ความรู้สึกของคุณที่นี่:", placeholder="เช่น วันนี้เหนื่อยจังเลย...")
+    st.markdown("**หรือใช้ไมโครโฟนพูดความรู้สึก:**")
+    audio_input = st.audio_input("พูดความรู้สึก") 
 with col2:
     num_songs = st.slider("🎵 จำนวนเพลง", min_value=1, max_value=10, value=5)
 
-# เมื่อกดปุ่ม ให้ดึงข้อมูลมาเก็บไว้ใน session_state อย่างเดียว (ไม่แสดงผลตรงนี้)
+# เมื่อกดปุ่ม ให้ดึงข้อมูลมาเก็บไว้ใน session_state อย่างเดียว
 if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="primary", use_container_width=True):
+    if audio_input:
+        st.info("กำลังประมวลผลเสียง... (ในเวอร์ชันนี้จะใช้ข้อความที่พิมพ์เป็นหลักก่อน)")
+        
     if mood_text:
         with st.spinner("AI กำลังวิเคราะห์ความรู้สึกและค้นหาเพลง..."):
             ai_result = get_playlist_from_ai(mood_text, num_songs)
@@ -161,7 +166,7 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                         if not track_info.get('spotify_url') and full_url: track_info['spotify_url'] = full_url
                     
                     if track_info:
-                        track_info['reason'] = song['reason'] # เก็บเหตุผลไว้แสดงผลด้วย
+                        track_info['reason'] = song['reason']
                         valid_tracks.append(track_info)
                 
                 # บันทึกข้อมูลลง session_state
@@ -199,7 +204,6 @@ if len(st.session_state.playlist) > 0:
             
             # ปุ่มกดฟังเพลง
             if track_info.get('preview_url'):
-                # เมื่อกดปุ่มนี้ จะอัปเดต URL และ Streamlit จะรันหน้าจอใหม่โดยที่เพลงไม่หาย
                 if st.button(f"▶️ ฟังตัวอย่าง", key=f"play_{i}", use_container_width=True):
                     st.session_state.current_preview_url = track_info['preview_url']
                     st.session_state.current_track_name = track_info['name']
