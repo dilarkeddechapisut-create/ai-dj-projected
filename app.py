@@ -1,6 +1,5 @@
 import streamlit as st
 import time
-from streamlit_mic_recorder import speech_to_text
 
 # นำเข้า Service ต่างๆ
 from ai_service import get_playlist_from_ai
@@ -22,17 +21,6 @@ st.markdown(f"""
     .stApp {{
         background: transparent !important;
         color: #ffffff;
-    }}
-
-    /* ซ่อนแถบดำและตั้งค่า iframe ของระบบอัดเสียงให้โปร่งใส */
-    iframe,
-    iframe[title="streamlit_mic_recorder.speech_to_text"],
-    div[data-testid="stCustomComponentV1"],
-    div[data-testid="stElementContainer"]:has(iframe) {{
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
     }}
 
     /* จัดสไตล์ตัววิดีโอเป็น Background เต็มจอ */
@@ -214,34 +202,6 @@ st.markdown(f"""
 <video autoplay loop muted playsinline id="bg-video">
     <source src="{BG_VIDEO_URL}" type="video/mp4">
 </video>
-
-<!-- JS ช่วยทะลวงลบสีพื้นหลังดำข้างใน iframe ของ Mic Recorder -->
-<script>
-(function fixMicIframeBg() {{
-    function cleanIframe() {{
-        var doc = window.parent ? window.parent.document : document;
-        var iframes = doc.querySelectorAll('iframe');
-        iframes.forEach(function(iframe) {{
-            try {{
-                var innerDoc = iframe.contentDocument || iframe.contentWindow.document;
-                if (innerDoc) {{
-                    if (innerDoc.body) {{
-                        innerDoc.body.style.backgroundColor = 'transparent';
-                        innerDoc.body.style.background = 'transparent';
-                        innerDoc.body.style.color = '#ffffff';
-                    }}
-                    if (innerDoc.documentElement) {{
-                        innerDoc.documentElement.style.backgroundColor = 'transparent';
-                        innerDoc.documentElement.style.background = 'transparent';
-                    }}
-                }}
-            }} catch(e) {{}}
-        }});
-    }}
-    cleanIframe();
-    setInterval(cleanIframe, 300);
-}})();
-</script>
 """, unsafe_allow_html=True)
 
 # ==========================================
@@ -257,10 +217,6 @@ if 'current_track_name' not in st.session_state:
     st.session_state.current_track_name = "" 
 if 'current_track_index' not in st.session_state:
     st.session_state.current_track_index = 0
-if 'user_input_text' not in st.session_state:
-    st.session_state.user_input_text = ""
-if 'last_mic_text' not in st.session_state:
-    st.session_state.last_mic_text = ""
 
 # ==========================================
 # 3. Header ตรงกลาง
@@ -275,34 +231,19 @@ st.markdown("""
 # ==========================================
 # 4. Form Layout
 # ==========================================
-st.markdown('<div class="section-title">🎙️ เล่าความรู้สึกของคุณผ่านเสียงหรือพิมพ์ข้อความ</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">✍️ เล่าความรู้สึกของคุณผ่านข้อความ</div>', unsafe_allow_html=True)
 
-# 1. ปุ่มพูดความรู้สึก (ไมโครโฟน)
-text_from_mic = speech_to_text(
-    language='th-TH', 
-    start_prompt="🎙️ กดเพื่อพูดความรู้สึก", 
-    stop_prompt="🛑 กดอีกครั้งเพื่อหยุด", 
-    just_once=False,
-    key='STT'
-)
-
-# อัปเดตข้อความเมื่อมีการรับเสียงเข้ามาใหม่
-if text_from_mic and text_from_mic != st.session_state.last_mic_text:
-    st.session_state.user_input_text = text_from_mic
-    st.session_state.last_mic_text = text_from_mic
-
-# 2. ช่องใส่ความรู้สึก (ดึงค่ามาจาก session_state)
+# ช่องใส่ความรู้สึก
 st.markdown('<div class="input-label">ความรู้สึกของคุณ:</div>', unsafe_allow_html=True)
 
 mood_text = st.text_area(
     "ความรู้สึกของคุณ:",
-    value=st.session_state.user_input_text,
     placeholder="เช่น วันนี้เลิกงานแล้ว เหนื่อยมากๆ อยากหาเพลงชิลๆ ฟังผ่อนคลาย...",
-    height=110,
+    height=120,
     label_visibility="collapsed"
 )
 
-# 3. Slider เลือกจำนวนเพลง
+# Slider เลือกจำนวนเพลง
 st.markdown('<div class="input-label">🎵 จำนวนเพลงที่ต้องการสุ่มจัด:</div>', unsafe_allow_html=True)
 num_songs = st.slider(
     "จำนวนเพลงที่ต้องการสุ่มจัด:",
@@ -312,7 +253,7 @@ num_songs = st.slider(
     label_visibility="collapsed"
 )
 
-# 4. ปุ่มจัดเพลงทันที
+# ปุ่มจัดเพลงทันที
 if st.button("✨ ให้ AI DJ จัดเพลงให้ทันที", type="primary", use_container_width=True):
     if mood_text:
         with st.spinner("AI กำลังวิเคราะห์ความรู้สึกและค้นหาเพลง..."):
@@ -350,7 +291,7 @@ if st.button("✨ ให้ AI DJ จัดเพลงให้ทันที"
                 st.session_state.playlist = valid_tracks
                 st.session_state.current_track_index = 0
     else:
-        st.warning("⚠️ กรุณาพิมพ์หรือพูดความรู้สึกของคุณก่อนครับ")
+        st.warning("⚠️ กรุณาพิมพ์ความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
 # 5. ส่วนแสดงผล Playlist
