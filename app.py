@@ -204,36 +204,6 @@ st.markdown(f"""
     <source src="{BG_VIDEO_URL}" type="video/mp4">
 </video>
 
-<!-- JS ช่วยลบสีพื้นหลังดำทั้งนอกและใน iframe ของ Mic Recorder -->
-<script>
-(function fixMicIframeBg() {{
-    function cleanIframe() {{
-        var doc = window.parent ? window.parent.document : document;
-        var iframes = doc.querySelectorAll('iframe');
-        iframes.forEach(function(iframe) {{
-            iframe.style.backgroundColor = 'transparent';
-            iframe.style.background = 'transparent';
-            try {{
-                var innerDoc = iframe.contentDocument || iframe.contentWindow.document;
-                if (innerDoc) {{
-                    if (innerDoc.body) {{
-                        innerDoc.body.style.backgroundColor = 'transparent';
-                        innerDoc.body.style.background = 'transparent';
-                    }}
-                    if (innerDoc.documentElement) {{
-                        innerDoc.documentElement.style.backgroundColor = 'transparent';
-                        innerDoc.documentElement.style.background = 'transparent';
-                    }}
-                }}
-            }} catch(e) {{}}
-        }});
-    }}
-    cleanIframe();
-    setInterval(cleanIframe, 200);
-}})();
-</script>
-""", unsafe_allow_html=True)
-
 # ==========================================
 # 2. State Management
 # ==========================================
