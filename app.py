@@ -121,7 +121,7 @@ st.title("🎧 AI DJ: จัดเพลย์ลิสต์ตามควา�
 st.markdown("บอกความรู้สึกของคุณมาให้เราฟัง แล้ว AI จะจัดเพลงที่ใช่ให้คุณเอง!")
 
 # ==========================================
-# 3. ส่วน Input & เรียก AI (เติมปุ่มไมค์กลับมาแล้ว!)
+# 3. ส่วน Input & เรียก AI
 # ==========================================
 col1, col2 = st.columns([2, 1])
 with col1:
@@ -175,7 +175,7 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
         st.warning("⚠️ กรุณาพิมพ์ความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
-# 4. ส่วนแสดงผล (จะคงอยู่ตลอดไปตราบใดที่ข้อมูลยังอยู่ใน session_state)
+# 4. ส่วนแสดงผล 
 # ==========================================
 if len(st.session_state.playlist) > 0:
     st.success("🎉 จัดเพลย์ลิสต์เสร็จเรียบร้อย!")
@@ -185,7 +185,6 @@ if len(st.session_state.playlist) > 0:
     cols = st.columns(3)
     for i, track_info in enumerate(st.session_state.playlist):
         with cols[i % 3]:
-            # แสดง Card
             st.markdown(f"""
             <div class="flip-card">
                 <div class="flip-card-inner">
@@ -202,19 +201,17 @@ if len(st.session_state.playlist) > 0:
             </div>
             """, unsafe_allow_html=True)
             
-            # ปุ่มกดฟังเพลง
             if track_info.get('preview_url'):
                 if st.button(f"▶️ ฟังตัวอย่าง", key=f"play_{i}", use_container_width=True):
                     st.session_state.current_preview_url = track_info['preview_url']
                     st.session_state.current_track_name = track_info['name']
                     st.session_state.play_timestamp = time.time() 
-                    st.rerun() # บังคับรีเฟรชเพื่อโหลดเครื่องเล่นล่างขวา
+                    st.rerun() 
             else:
                 st.button("❌ ไม่มีตัวอย่าง", key=f"no_play_{i}", disabled=True, use_container_width=True)
             
             st.markdown(f"<div style='text-align:center;'>[เปิดฟังเต็มบน Spotify]({track_info.get('spotify_url', '#')})</div><br>", unsafe_allow_html=True)
 
-    # กราฟสถิติ
     st.divider()
     st.subheader("📈 วิเคราะห์สถิติของ Playlist")
     try:
@@ -225,7 +222,7 @@ if len(st.session_state.playlist) > 0:
         st.info("ไม่สามารถสร้างกราฟสถิติได้")
 
 # ==========================================
-# 5. Floating Player (จะแสดงก็ต่อเมื่อมีการกดเลือกเพลง)
+# 5. Floating Player
 # ==========================================
 if st.session_state.current_preview_url:
     player_id = f"audio-player-{st.session_state.play_timestamp}"
@@ -236,15 +233,15 @@ if st.session_state.current_preview_url:
             <div style="color: #1DB954; font-weight: bold; font-size: 14px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">
                 🎵 กำลังเล่น: {st.session_state.current_track_name}
             </div>
-            <!-- ปุ่มปิดเครื่องเล่น -->
             <button onclick="document.getElementById('floating-music-box').style.display='none'" 
                     style="background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 0; line-height: 1;">
                 &times;
             </button>
         </div>
         
+        <!-- เอา type="audio/mpeg" ออก เพื่อให้บราวเซอร์ตรวจจับไฟล์ .m4a หรือ .mp3 เองอัตโนมัติ -->
         <audio id="{player_id}" controls autoplay style="width: 100%; height: 45px; border-radius: 8px; outline: none;">
-            <source src="{st.session_state.current_preview_url}" type="audio/mpeg">
+            <source src="{st.session_state.current_preview_url}">
         </audio>
     </div>
     """
