@@ -204,6 +204,36 @@ st.markdown(f"""
     <source src="{BG_VIDEO_URL}" type="video/mp4">
 </video>
 
+<!-- JS ช่วยลบสีพื้นหลังดำทั้งนอกและใน iframe ของ Mic Recorder -->
+<script>
+(function fixMicIframeBg() {{
+    function cleanIframe() {{
+        var doc = window.parent ? window.parent.document : document;
+        var iframes = doc.querySelectorAll('iframe');
+        iframes.forEach(function(iframe) {{
+            iframe.style.backgroundColor = 'transparent';
+            iframe.style.background = 'transparent';
+            try {{
+                var innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+                if (innerDoc) {{
+                    if (innerDoc.body) {{
+                        innerDoc.body.style.backgroundColor = 'transparent';
+                        innerDoc.body.style.background = 'transparent';
+                    }}
+                    if (innerDoc.documentElement) {{
+                        innerDoc.documentElement.style.backgroundColor = 'transparent';
+                        innerDoc.documentElement.style.background = 'transparent';
+                    }}
+                }}
+            }} catch(e) {{}}
+        }});
+    }}
+    cleanIframe();
+    setInterval(cleanIframe, 200);
+}})();
+</script>
+""", unsafe_allow_html=True)
+
 # ==========================================
 # 2. State Management
 # ==========================================
@@ -233,8 +263,18 @@ st.markdown("""
 # ==========================================
 st.markdown('<div class="section-title">🎙️ เล่าความรู้สึกของคุณผ่านเสียงหรือพิมพ์ข้อความ</div>', unsafe_allow_html=True)
 
+# 1. ปุ่มพูดความรู้สึก (ไมโครโฟน)
+text_from_mic = speech_to_text(
+    language='th-TH', 
+    start_prompt="🎙️ กดเพื่อพูดความรู้สึก", 
+    stop_prompt="🛑 กดอีกครั้งเพื่อหยุด", 
+    just_once=False,
+    key='STT'
+)
+
 # 2. ช่องใส่ความรู้สึก
 st.markdown('<div class="input-label">ความรู้สึกของคุณ:</div>', unsafe_allow_html=True)
+default_text = text_from_mic if text_from_mic else ""
 
 mood_text = st.text_area(
     "ความรู้สึกของคุณ:",
