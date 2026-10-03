@@ -78,40 +78,46 @@ st.markdown("""
     }
 
     /* ==========================================
-       Floating Player Container (ไร้แถบซ้อน + ลากขยับได้)
+       จัดสไตล์ Floating Player (การ์ดชั้นเดียว ลอยสตรีม)
        ========================================== */
-    div[data-testid="stVerticalBlock"] > div:has(div.floating-marker) {
+    div[data-key="floating_player_box"],
+    div[class*="st-key-floating_player_box"],
+    div[data-testid="stVerticalBlock"]:has(div.floating-marker) {
         position: fixed !important;
         bottom: 30px !important;
         right: 25px !important;
         width: 360px !important;
         height: auto !important;
         background: #121212 !important;
-        border: 1.5px solid #1DB954 !important;
-        padding: 12px 14px 10px 14px !important;
+        border: 2px solid #1DB954 !important;
         border-radius: 16px !important;
+        padding: 14px 16px 12px 16px !important;
         z-index: 999999 !important;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
     }
 
-    /* ลบ Padding/Margin เกินของ Audio Player ตัวใน */
-    div:has(div.floating-marker) div[data-testid="stAudio"] {
-        margin: 4px 0px !important;
+    /* เคลียร์ Margin/Padding ของ Element ข้างในไม่ให้ซ้อนทับ */
+    div[data-key="floating_player_box"] div[data-testid="stVerticalBlock"],
+    div[class*="st-key-floating_player_box"] div[data-testid="stVerticalBlock"] {
+        gap: 0.4rem !important;
+    }
+
+    div[data-key="floating_player_box"] div[data-testid="stAudio"],
+    div[class*="st-key-floating_player_box"] div[data-testid="stAudio"] {
+        margin: 2px 0px !important;
         padding: 0px !important;
     }
 
-    div:has(div.floating-marker) audio {
+    div[data-key="floating_player_box"] audio,
+    div[class*="st-key-floating_player_box"] audio {
         border-radius: 8px !important;
         width: 100% !important;
     }
 
-    /* ตกแต่งปุ่มกดภายใน Floating Player */
-    div:has(div.floating-marker) button {
-        border-radius: 8px !important;
-    }
-
     @media (max-width: 768px) {
-        div[data-testid="stVerticalBlock"] > div:has(div.floating-marker) {
+        div[data-key="floating_player_box"],
+        div[class*="st-key-floating_player_box"],
+        div[data-testid="stVerticalBlock"]:has(div.floating-marker) {
             bottom: 15px !important;
             right: 15px !important;
             left: 15px !important;
@@ -247,21 +253,21 @@ if len(st.session_state.playlist) > 0:
         st.info("ไม่สามารถสร้างกราฟสถิติได้")
 
 # ==========================================
-# 5. Floating Player (ลากขยับได้ + ปุ่มเปลี่ยนเพลง)
+# 5. Floating Player (การ์ดชั้นเดียว + คลิกค้างแล้วลากได้)
 # ==========================================
 if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
-    with st.container():
+    with st.container(key="floating_player_box"):
         st.markdown('<div class="floating-marker"></div>', unsafe_allow_html=True)
         
         curr_idx = st.session_state.get('current_track_index', 0)
         total_songs = len(st.session_state.playlist)
         
-        # Header ของกล่อง สามารถคลิกลากย้ายตำแหน่งได้
+        # ส่วนหัวเครื่องเล่น: คลิกค้างที่ข้อความนี้เพื่อลากย้ายตำแหน่ง
         head_c1, head_c2 = st.columns([85, 15])
         with head_c1:
             st.markdown(
-                f"<div id='drag-handle' style='cursor: move; user-select: none; color:#1DB954; font-weight:bold; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;'>"
-                f"⠿ 🎵 {st.session_state.current_track_name} <span style='color:#888; font-size:11px;'>({curr_idx + 1}/{total_songs})</span></div>",
+                f"<div id='drag-handle' style='cursor: move; user-select: none; color:#1DB954; font-weight:bold; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:2px 0;'>"
+                f"⋮⋮ 🎵 {st.session_state.current_track_name} <span style='color:#888; font-size:11px;'>({curr_idx + 1}/{total_songs})</span></div>",
                 unsafe_allow_html=True
             )
         with head_c2:
@@ -284,9 +290,9 @@ if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
                 st.session_state.current_track_name = next_track.get('name')
                 st.rerun()
         with ctrl_c2:
-            st.markdown("<div style='text-align:center; font-size:11px; color:#888; line-height:35px;'>AI DJ</div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align:center; font-size:11px; color:#888; line-height:38px; font-weight:bold;'>AI DJ</div>", unsafe_allow_html=True)
         with ctrl_c3:
-            if st.button("ถัดไป ⏭️️", key="next_track", use_container_width=True):
+            if st.button("ถัดไป ⏭️", key="next_track", use_container_width=True):
                 next_idx = (curr_idx + 1) % total_songs
                 st.session_state.current_track_index = next_idx
                 next_track = st.session_state.playlist[next_idx]
@@ -294,37 +300,60 @@ if st.session_state.current_preview_url and len(st.session_state.playlist) > 0:
                 st.session_state.current_track_name = next_track.get('name')
                 st.rerun()
 
-    # JavaScript เพิ่มฟังก์ชันลากย้ายตำแหน่ง
+    # สคริปต์ JavaScript สำหรับผูก Event Drag & Drop เข้ากับ window.parent
     st.markdown("""
     <script>
-    setTimeout(function() {
-        var player = document.querySelector('div[data-testid="stVerticalBlock"] > div:has(div.floating-marker)');
-        var handle = document.getElementById('drag-handle');
-        if (player && handle) {
+    (function attachDrag() {
+        function init() {
+            var doc = window.parent ? window.parent.document : document;
+            var player = doc.querySelector('div[data-key="floating_player_box"]') || 
+                         doc.querySelector('div[class*="st-key-floating_player_box"]') ||
+                         doc.querySelector('div[data-testid="stVerticalBlock"]:has(div.floating-marker)');
+            
+            var handle = doc.querySelector('#drag-handle');
+            
+            if (!player || !handle) {
+                setTimeout(init, 250);
+                return;
+            }
+
+            if (handle.getAttribute('data-drag-ready') === 'true') return;
+            handle.setAttribute('data-drag-ready', 'true');
+
             var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
             handle.onmousedown = function(e) {
                 e = e || window.event;
                 e.preventDefault();
                 pos3 = e.clientX;
                 pos4 = e.clientY;
-                document.onmouseup = function() {
-                    document.onmouseup = null;
-                    document.onmousemove = null;
+
+                doc.onmouseup = function() {
+                    doc.onmouseup = null;
+                    doc.onmousemove = null;
                 };
-                document.onmousemove = function(e) {
+
+                doc.onmousemove = function(e) {
                     e = e || window.event;
                     e.preventDefault();
                     pos1 = pos3 - e.clientX;
                     pos2 = pos4 - e.clientY;
                     pos3 = e.clientX;
                     pos4 = e.clientY;
-                    player.style.top = (player.offsetTop - pos2) + "px";
-                    player.style.left = (player.offsetLeft - pos1) + "px";
+
+                    var currentTop = player.offsetTop;
+                    var currentLeft = player.offsetLeft;
+
+                    player.style.position = 'fixed';
+                    player.style.top = (currentTop - pos2) + 'px';
+                    player.style.left = (currentLeft - pos1) + 'px';
                     player.style.bottom = 'auto';
                     player.style.right = 'auto';
+                    player.style.margin = '0';
                 };
             };
         }
-    }, 300);
+        init();
+    })();
     </script>
     """, unsafe_allow_html=True)
