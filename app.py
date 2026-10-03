@@ -265,7 +265,6 @@ st.markdown('<div class="section-title">🎙️ เล่าความรู�
 
 # 2. ช่องใส่ความรู้สึก
 st.markdown('<div class="input-label">ความรู้สึกของคุณ:</div>', unsafe_allow_html=True)
-default_text = text_from_mic if text_from_mic else ""
 
 mood_text = st.text_area(
     "ความรู้สึกของคุณ:",
