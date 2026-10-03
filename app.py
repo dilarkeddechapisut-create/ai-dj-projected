@@ -77,28 +77,26 @@ st.markdown("""
         align-items: center;
     }
 
-    /* ตรึง Floating Container ให้อยู่ล่างขวาของหน้าจอทั้งคอมและมือถือ */
+    /* ปรับแต่ง Floating Player ใหม่ หลบแถบ Manage App และจัด Padding ไม่ให้ล้น */
     div[data-testid="stVerticalBlock"] > div:has(div.floating-marker) {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 340px;
-        background: rgba(15, 32, 39, 0.95);
-        border: 2px solid #1DB954;
-        padding: 15px;
-        border-radius: 16px;
-        z-index: 999999;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        backdrop-filter: blur(10px);
+        position: fixed !important;
+        bottom: 55px !important; /* ยกขึ้นให้พ้นแถบ Manage app ด้านล่าง */
+        right: 25px !important;
+        width: 360px !important;
+        background: #111d28 !important;
+        border: 2px solid #1DB954 !important;
+        padding: 16px 18px 18px 18px !important;
+        border-radius: 20px !important;
+        z-index: 999999 !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
     }
 
     @media (max-width: 768px) {
         div[data-testid="stVerticalBlock"] > div:has(div.floating-marker) {
-            bottom: 10px;
-            right: 10px;
-            left: 10px;
-            width: calc(100vw - 20px);
-            padding: 10px;
+            bottom: 20px !important;
+            right: 15px !important;
+            left: 15px !important;
+            width: calc(100vw - 30px) !important;
         }
     }
 </style>
@@ -172,7 +170,7 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
         st.warning("⚠️ กรุณาพิมพ์ความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
-# 4. ส่วนแสดงผล
+# 4. ส่วนแสดงผล 
 # ==========================================
 if len(st.session_state.playlist) > 0:
     st.success("🎉 จัดเพลย์ลิสต์เสร็จเรียบร้อย!")
@@ -182,6 +180,7 @@ if len(st.session_state.playlist) > 0:
     cols = st.columns(3)
     for i, track_info in enumerate(st.session_state.playlist):
         with cols[i % 3]:
+            # แสดง Card
             st.markdown(f"""
             <div class="flip-card">
                 <div class="flip-card-inner">
@@ -198,6 +197,7 @@ if len(st.session_state.playlist) > 0:
             </div>
             """, unsafe_allow_html=True)
             
+            # ปุ่มฟังตัวอย่าง
             if track_info.get('preview_url'):
                 if st.button(f"▶️ ฟังตัวอย่าง", key=f"play_{i}", use_container_width=True):
                     st.session_state.current_preview_url = track_info['preview_url']
@@ -206,7 +206,13 @@ if len(st.session_state.playlist) > 0:
             else:
                 st.button("❌ ไม่มีตัวอย่าง", key=f"no_play_{i}", disabled=True, use_container_width=True)
             
-            st.markdown(f"<div style='text-align:center;'>[เปิดฟังเต็มบน Spotify]({track_info.get('spotify_url', '#')})</div><br>", unsafe_allow_html=True)
+            # เปลี่ยนข้อความลิงก์เป็นปุ่มกด Streamlit แบบทางการ (st.link_button)
+            st.link_button(
+                "🟢 เปิดฟังบน Spotify", 
+                track_info.get('spotify_url', '#'), 
+                use_container_width=True
+            )
+            st.markdown("<br>", unsafe_allow_html=True)
 
     st.divider()
     st.subheader("📈 วิเคราะห์สถิติของ Playlist")
@@ -218,7 +224,7 @@ if len(st.session_state.playlist) > 0:
         st.info("ไม่สามารถสร้างกราฟสถิติได้")
 
 # ==========================================
-# 5. Floating Player (ใช้ st.audio ดั้งเดิมของ Streamlit)
+# 5. Floating Player (ปรับ UI และขยับพ้นขอบล่าง)
 # ==========================================
 if st.session_state.current_preview_url:
     with st.container():
@@ -226,12 +232,12 @@ if st.session_state.current_preview_url:
         
         c1, c2 = st.columns([8, 2])
         with c1:
-            st.markdown(f"<span style='color:#1DB954; font-weight:bold; font-size:14px;'>🎵 {st.session_state.current_track_name}</span>", unsafe_allow_html=True)
+            st.markdown(f"<div style='color:#1DB954; font-weight:bold; font-size:14px; margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'>🎵 {st.session_state.current_track_name}</div>", unsafe_allow_html=True)
         with c2:
             if st.button("✖", key="close_player"):
                 st.session_state.current_preview_url = None
                 st.session_state.current_track_name = ""
                 st.rerun()
                 
-        # ใช้ Native Audio Player รองรับทั้ง mp3, m4a และไฟล์ iTunes ลื่นไหลไม่มี Error
+        # เล่นเสียงแบบ Native ปรับปรุง CSS Padding แล้ว
         st.audio(st.session_state.current_preview_url, format="audio/mp3", autoplay=True)
