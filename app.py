@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit_mic_recorder import speech_to_text
 
-# นำเข้า Service ต่างๆ (ลบ feedback_service ที่ไม่ได้ใช้ออกแล้ว)
+# นำเข้า Service ต่างๆ
 from ai_service import get_playlist_from_ai
 from spotify_service import search_spotify_track
 from stats_service import create_radar_chart
@@ -34,6 +34,16 @@ st.markdown(f"""
         z-index: -100;
         object-fit: cover;
         filter: brightness(0.4);
+    }}
+
+    /* ลบแถบพื้นหลังดำยาวของ Mic Recorder Component (แก้ไขปุ่มให้เหมือนรูปสอง) */
+    div[data-testid="stCustomComponentV1"],
+    div[data-testid="stCustomComponentV1"] iframe,
+    iframe[title*="speech_to_text"],
+    iframe[title*="streamlit_mic_recorder"] {{
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
     }}
 
     /* ตกแต่ง Header ตรงกลาง */
@@ -330,7 +340,7 @@ if st.button("✨ ให้ AI DJ จัดเพลงให้ทันที"
                 st.session_state.playlist = valid_tracks
                 st.session_state.current_track_index = 0
     else:
-        st.warning("⚠️ กรุณาพิมพ์หรือพูดความรู้สึกของคุณก่อนครับ")
+        st.warning("⚠️️ กรุณาพิมพ์หรือพูดความรู้สึกของคุณก่อนครับ")
 
 # ==========================================
 # 5. ส่วนแสดงผล Playlist
