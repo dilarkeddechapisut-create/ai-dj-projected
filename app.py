@@ -24,15 +24,14 @@ st.markdown(f"""
         color: #ffffff;
     }}
 
-    /* 📌 ซ่อนแถบดำ และปรับขนาด Custom Component (ปุ่มอัดเสียง) ให้พอดีกับตัวปุ่มเท่านั้น */
+    /* ซ่อนแถบดำและตั้งค่า iframe ฝั่ง Parent ให้โปร่งใส */
     iframe,
     div[data-testid="stCustomComponentV1"],
     div[data-testid="stElementContainer"]:has(iframe) {{
-        width: fit-content !important;
-        max-width: fit-content !important;
         background: transparent !important;
         background-color: transparent !important;
         border: none !important;
+        box-shadow: none !important;
     }}
 
     /* จัดสไตล์ตัววิดีโอเป็น Background เต็มจอ */
@@ -46,7 +45,7 @@ st.markdown(f"""
         height: auto;
         z-index: -100;
         object-fit: cover;
-        filter: brightness(0.4); /* ปรับความสว่างของวิดีโอเพื่อให้ข้อความอ่านง่าย */
+        filter: brightness(0.4);
     }}
 
     /* ตกแต่ง Header ตรงกลาง */
@@ -214,6 +213,33 @@ st.markdown(f"""
 <video autoplay loop muted playsinline id="bg-video">
     <source src="{BG_VIDEO_URL}" type="video/mp4">
 </video>
+
+<!-- JS ช่วยทะลวงลบสีพื้นหลังดำข้างใน iframe ของ Mic Recorder -->
+<script>
+(function fixMicIframeBg() {{
+    function cleanIframe() {{
+        var doc = window.parent ? window.parent.document : document;
+        var iframes = doc.querySelectorAll('iframe');
+        iframes.forEach(function(iframe) {{
+            try {{
+                var innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+                if (innerDoc) {{
+                    if (innerDoc.body) {{
+                        innerDoc.body.style.backgroundColor = 'transparent';
+                        innerDoc.body.style.background = 'transparent';
+                    }}
+                    if (innerDoc.documentElement) {{
+                        innerDoc.documentElement.style.backgroundColor = 'transparent';
+                        innerDoc.documentElement.style.background = 'transparent';
+                    }}
+                }}
+            }} catch(e) {{}}
+        }});
+    }}
+    cleanIframe();
+    setInterval(cleanIframe, 300);
+}})();
+</script>
 """, unsafe_allow_html=True)
 
 # ==========================================
