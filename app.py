@@ -263,15 +263,6 @@ st.markdown("""
 # ==========================================
 st.markdown('<div class="section-title">🎙️ เล่าความรู้สึกของคุณผ่านเสียงหรือพิมพ์ข้อความ</div>', unsafe_allow_html=True)
 
-# 1. ปุ่มพูดความรู้สึก (ไมโครโฟน)
-text_from_mic = speech_to_text(
-    language='th-TH', 
-    start_prompt="🎙️ กดเพื่อพูดความรู้สึก", 
-    stop_prompt="🛑 กดอีกครั้งเพื่อหยุด", 
-    just_once=False,
-    key='STT'
-)
-
 # 2. ช่องใส่ความรู้สึก
 st.markdown('<div class="input-label">ความรู้สึกของคุณ:</div>', unsafe_allow_html=True)
 default_text = text_from_mic if text_from_mic else ""
