@@ -40,11 +40,7 @@ st.markdown(f"""
     div[data-testid="stCustomComponentV1"],
     div[data-testid="stCustomComponentV1"] iframe,
     iframe[title*="speech_to_text"],
-    iframe[title*="streamlit_mic_recorder"] {{
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-    }}
+    iframe[title*="streamlit_mic_recorder"]
 
     /* ตกแต่ง Header ตรงกลาง */
     .main-header {{
