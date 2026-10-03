@@ -1,12 +1,10 @@
 import streamlit as st
-import time
 from streamlit_mic_recorder import speech_to_text
 
-# นำเข้า Service ต่างๆ
+# นำเข้า Service ต่างๆ (ลบ feedback_service ที่ไม่ได้ใช้ออกแล้ว)
 from ai_service import get_playlist_from_ai
 from spotify_service import search_spotify_track
 from stats_service import create_radar_chart
-from feedback_service import save_feedback
 from preview_service import get_track_preview
 
 # ==========================================
@@ -204,15 +202,13 @@ st.markdown(f"""
     <source src="{BG_VIDEO_URL}" type="video/mp4">
 </video>
 
-<!-- JS ช่วยลบสีพื้นหลังดำทั้งนอกและใน iframe ของ Mic Recorder -->
+<!-- JS ช่วยลบสีพื้นหลังดำข้างใน iframe ของ Mic Recorder -->
 <script>
 (function fixMicIframeBg() {{
     function cleanIframe() {{
         var doc = window.parent ? window.parent.document : document;
         var iframes = doc.querySelectorAll('iframe');
         iframes.forEach(function(iframe) {{
-            iframe.style.backgroundColor = 'transparent';
-            iframe.style.background = 'transparent';
             try {{
                 var innerDoc = iframe.contentDocument || iframe.contentWindow.document;
                 if (innerDoc) {{
@@ -229,7 +225,7 @@ st.markdown(f"""
         }});
     }}
     cleanIframe();
-    setInterval(cleanIframe, 200);
+    setInterval(cleanIframe, 300);
 }})();
 </script>
 """, unsafe_allow_html=True)
@@ -307,7 +303,7 @@ if st.button("✨ ให้ AI DJ จัดเพลงให้ทันที"
                 for song in ai_result['songs']:
                     try:
                         track_info = search_spotify_track(song['title'], song['artist'])
-                    except:
+                    except Exception:
                         track_info = None
 
                     img_url, preview_url, full_url = get_track_preview(song['title'], song['artist'])
@@ -321,13 +317,15 @@ if st.button("✨ ให้ AI DJ จัดเพลงให้ทันที"
                             'spotify_url': full_url if full_url else "#"
                         }
                     else:
-                        if preview_url: track_info['preview_url'] = preview_url
-                        if img_url: track_info['album_cover'] = img_url
-                        if not track_info.get('spotify_url') and full_url: track_info['spotify_url'] = full_url
+                        if preview_url: 
+                            track_info['preview_url'] = preview_url
+                        if img_url: 
+                            track_info['album_cover'] = img_url
+                        if not track_info.get('spotify_url') and full_url: 
+                            track_info['spotify_url'] = full_url
                     
-                    if track_info:
-                        track_info['reason'] = song['reason']
-                        valid_tracks.append(track_info)
+                    track_info['reason'] = song['reason']
+                    valid_tracks.append(track_info)
                 
                 st.session_state.playlist = valid_tracks
                 st.session_state.current_track_index = 0
@@ -362,7 +360,7 @@ if len(st.session_state.playlist) > 0:
             """, unsafe_allow_html=True)
             
             if track_info.get('preview_url'):
-                if st.button(f"▶️ ฟังตัวอย่าง", key=f"play_{i}", use_container_width=True):
+                if st.button("▶️ ฟังตัวอย่าง", key=f"play_{i}", use_container_width=True):
                     st.session_state.current_preview_url = track_info['preview_url']
                     st.session_state.current_track_name = track_info['name']
                     st.session_state.current_track_index = i
@@ -383,7 +381,7 @@ if len(st.session_state.playlist) > 0:
         fig = create_radar_chart(st.session_state.playlist)
         if fig:
             st.plotly_chart(fig, use_container_width=True)
-    except:
+    except Exception:
         st.info("ไม่สามารถสร้างกราฟสถิติได้")
 
 # ==========================================
