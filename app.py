@@ -23,17 +23,7 @@ st.markdown(f"""
         background: transparent !important;
         color: #ffffff;
     }}
-
-    /* ซ่อนพื้นหลังแถบดำของ Mic Recorder (Custom Component) และ iframe ทั้งหมด */
-    iframe,
-    div[data-testid="stCustomComponentV1"],
-    div[data-testid="element-container"],
-    div[data-testid="stVerticalBlock"] > div {{
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-    }}
-
+    
     /* จัดสไตล์ตัววิดีโอเป็น Background เต็มจอ */
     #bg-video {{
         position: fixed;
