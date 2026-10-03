@@ -1,14 +1,18 @@
 import streamlit as st
+import time
+
+# นำเข้า Service ต่างๆ ของคุณ (รวมถึง Service ใหม่)
 from ai_service import get_playlist_from_ai
 from spotify_service import search_spotify_track
 from stats_service import create_radar_chart
 from feedback_service import save_feedback
-import time
+from preview_service import get_track_preview  # <--- นำเข้าฟังก์ชันดึงพรีวิวเพลง
 
-# 1. ตั้งค่าหน้าเพจ
+# ==========================================
+# 1. ตั้งค่าหน้าเพจ & CSS
+# ==========================================
 st.set_page_config(page_title="AI DJ Mood Matcher", page_icon="🎧", layout="wide")
 
-# 2. CSS สำหรับพื้นหลัง, อนิเมชั่น, Flip Cards และ Floating Player
 st.markdown("""
 <style>
     /* พื้นหลัง Gradient อนิเมชั่น */
@@ -91,7 +95,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. State Management สำหรับเครื่องเล่นเพลง
+# ==========================================
+# 2. State Management สำหรับเครื่องเล่นเพลง
+# ==========================================
 if 'current_preview_url' not in st.session_state:
     st.session_state.current_preview_url = None
 if 'current_track_name' not in st.session_state:
@@ -100,18 +106,19 @@ if 'current_track_name' not in st.session_state:
 st.title("🎧 AI DJ: จัดเพลย์ลิสต์ตามความรู้สึก")
 st.markdown("บอกความรู้สึกของคุณมาให้เราฟัง แล้ว AI จะจัดเพลงที่ใช่ให้คุณเอง!")
 
-# 4. ส่วน Input (Text, Mic, Slider)
+# ==========================================
+# 3. ส่วน Input (Text, Mic, Slider)
+# ==========================================
 col1, col2 = st.columns([2, 1])
 with col1:
     mood_text = st.text_input("💬 พิมพ์ความรู้สึกของคุณที่นี่:", placeholder="เช่น วันนี้เหนื่อยจังเลย อยากได้เพลงปลอบใจ...")
     st.markdown("**หรือใช้ไมโครโฟนพูดความรู้สึก:**")
-    audio_input = st.audio_input("พูดความรู้สึก") # Widget อัดเสียงใหม่ล่าสุดของ Streamlit
+    audio_input = st.audio_input("พูดความรู้สึก") 
 with col2:
     num_songs = st.slider("🎵 จำนวนเพลงที่ต้องการ", min_value=1, max_value=10, value=5)
 
 # ประมวลผลเมื่อกดปุ่ม
 if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="primary", use_container_width=True):
-    # ถ้ามีเสียง ให้อัพเดท mood_text (ในโปรเจกต์จริงสามารถส่ง audio ให้ Gemini โดยตรงได้)
     if audio_input:
         st.info("กำลังประมวลผลเสียง... (ในเวอร์ชั่นนี้จะใช้ข้อความที่พิมพ์เป็นหลักก่อน)")
     
@@ -126,11 +133,31 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                 
                 valid_tracks = []
                 
-                # นำชื่อเพลงจาก AI ไปหาใน Spotify
                 cols = st.columns(3) # แสดงทีละ 3 คอลัมน์
                 for i, song in enumerate(ai_result['songs']):
-                    track_info = search_spotify_track(song['title'], song['artist'])
+                    # พยายามดึงข้อมูลจาก Spotify
+                    try:
+                        track_info = search_spotify_track(song['title'], song['artist'])
+                    except:
+                        track_info = None
+
+                    # เรียกใช้ฟังก์ชันจาก preview_service.py ที่เราแยกไฟล์ไว้
+                    img_url, preview_url, full_url = get_track_preview(song['title'], song['artist'])
                     
+                    # รวมข้อมูลเข้าด้วยกัน
+                    if not track_info:
+                        track_info = {
+                            'name': song['title'],
+                            'artist': song['artist'],
+                            'album_cover': img_url if img_url else "https://via.placeholder.com/500?text=No+Cover",
+                            'preview_url': preview_url,
+                            'spotify_url': full_url if full_url else "#"
+                        }
+                    else:
+                        if preview_url: track_info['preview_url'] = preview_url
+                        if img_url: track_info['album_cover'] = img_url
+                        if not track_info.get('spotify_url') and full_url: track_info['spotify_url'] = full_url
+
                     if track_info:
                         valid_tracks.append(track_info)
                         col_idx = i % 3
@@ -140,7 +167,7 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                             <div class="flip-card">
                               <div class="flip-card-inner">
                                 <div class="flip-card-front">
-                                  <img src="{track_info['album_cover']}" alt="Avatar">
+                                  <img src="{track_info['album_cover']}" alt="Album Cover">
                                 </div>
                                 <div class="flip-card-back">
                                   <h4>{track_info['name']}</h4>
@@ -153,22 +180,25 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
                             """, unsafe_allow_html=True)
                             
                             # ปุ่มกดฟังตัวอย่าง (อัปเดต Floating Player)
-                            if track_info['preview_url']:
+                            if track_info.get('preview_url'):
                                 if st.button(f"▶️ ฟังตัวอย่าง", key=f"play_{i}"):
                                     st.session_state.current_preview_url = track_info['preview_url']
                                     st.session_state.current_track_name = track_info['name']
-                                    st.rerun() # สั่งรีรันหน้าเว็บเพื่ออัปเดตเครื่องเล่น
+                                    st.rerun() 
                             else:
                                 st.button("❌ ไม่มีตัวอย่างเพลง", key=f"play_{i}", disabled=True)
                             
-                            st.markdown(f"[เปิดใน Spotify]({track_info['spotify_url']})")
+                            st.markdown(f"[เปิดฟังเวอร์ชันเต็ม]({track_info.get('spotify_url', '#')})")
                 
                 # แสดงกราฟวิเคราะห์ (Stats)
                 st.divider()
                 st.subheader("📈 วิเคราะห์สถิติของ Playlist")
-                fig = create_radar_chart(valid_tracks)
-                if fig:
-                    st.plotly_chart(fig, use_container_width=True)
+                try:
+                    fig = create_radar_chart(valid_tracks)
+                    if fig:
+                        st.plotly_chart(fig, use_container_width=True)
+                except Exception as e:
+                    st.info("ไม่สามารถสร้างกราฟสถิติได้เนื่องจากข้อมูลจาก Spotify ไม่ครบถ้วน")
 
                 # ระบบ Feedback
                 st.divider()
@@ -186,7 +216,9 @@ if st.button("✨ ให้ AI จัดเพลย์ลิสต์", type="p
     else:
         st.warning("⚠️ กรุณาพิมพ์ความรู้สึกของคุณก่อนครับ")
 
-# 5. Floating Player Rendering (เรนเดอร์เครื่องเล่นเมื่อมีการกดฟัง)
+# ==========================================
+# 4. Floating Player Rendering
+# ==========================================
 if st.session_state.current_preview_url:
     floating_player_html = f"""
     <div class="floating-player">
