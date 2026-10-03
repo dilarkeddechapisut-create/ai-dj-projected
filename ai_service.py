@@ -1,36 +1,46 @@
-import google.generativeai as genai
-import json
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
 import streamlit as st
 
-# ตั้งค่า API Key จาก Secrets
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+client_id = st.secrets["SPOTIFY_CLIENT_ID"]
+client_secret = st.secrets["SPOTIFY_CLIENT_SECRET"]
 
-# ใช้โมเดล gemini-1.5-flash รองรับ Text และ JSON Output ได้ดี
-model = genai.GenerativeModel('gemini-3.5-flash')
+sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+    client_id=client_id,
+    client_secret=client_secret
+))
 
-def get_playlist_from_ai(mood_text, num_songs):
-    """วิเคราะห์ความรู้สึกและสร้าง Playlist คืนค่าเป็น JSON"""
-    prompt = f"""
-    ผู้ใช้มีความรู้สึกดังนี้: "{mood_text}"
-    กรุณาทำหน้าที่เป็น AI DJ ผู้เห็นอกเห็นใจ
-    1. ให้คำพูดให้กำลังใจ/เข้าอกเข้าใจผู้ใช้ภาพรวมสั้นๆ 1 ย่อหน้า
-    2. แนะนำเพลงจำนวน {num_songs} เพลง ที่เข้ากับอารมณ์นี้ (เน้นเพลงดังที่มีใน Spotify)
+def search_spotify_track(song_title, artist_name):
+    """ค้นหาเพลงและดึงข้อมูลพื้นฐาน"""
+    query = f"track:{song_title} artist:{artist_name}"
+    results = sp.search(q=query, type='track', limit=1)
     
-    ส่งคำตอบกลับมาในรูปแบบ JSON เท่านั้น โครงสร้างดังนี้:
-    {{
-        "encouragement": "คำพูดให้กำลังใจ...",
-        "songs": [
-            {{"title": "ชื่อเพลง", "artist": "ชื่อศิลปิน", "reason": "เหตุผลที่เลือกเพลงนี้ให้ (1 ประโยค)"}}
-        ]
-    }}
-    """
-    
-    try:
-        response = model.generate_content(prompt)
-        # ทำความสะอาดข้อความเพื่อดึงแค่ JSON
-        json_str = response.text.replace('```json', '').replace('```', '').strip()
-        data = json.loads(json_str)
-        return data
-    except Exception as e:
-        st.error(f"เกิดข้อผิดพลาดในการวิเคราะห์ AI: {e}")
+    tracks = results.get('tracks', {}).get('items', [])
+    if not tracks:
         return None
+        
+    track = tracks[0]
+    track_id = track['id']
+    
+    # ดึงค่า Audio Features (ใส่ Try-Except ดัก Error จากนโยบายใหม่ของ Spotify)
+    try:
+        features = sp.audio_features(track_id)[0]
+        energy = features['energy'] if features else 0.5
+        valence = features['valence'] if features else 0.5
+        danceability = features['danceability'] if features else 0.5
+    except Exception as e:
+        # หาก Spotify API บล็อก จะตั้งค่ากลางๆ ไว้ไม่ให้แอปพัง
+        print(f"Spotify Audio Features API ถูกจำกัด: {e}")
+        energy, valence, danceability = 0.5, 0.5, 0.5
+    
+    return {
+        "id": track_id,
+        "name": track['name'],
+        "artist": track['artists'][0]['name'],
+        "album_cover": track['album']['images'][0]['url'],
+        "preview_url": track.get('preview_url'),
+        "spotify_url": track['external_urls']['spotify'],
+        "energy": energy,
+        "valence": valence,
+        "danceability": danceability
+    }
