@@ -13,9 +13,9 @@ def get_playlist_from_ai(mood_text, num_songs):
     
     # ใช้ Gemini Flash รุ่นมาตรฐานเพื่อความเสถียร
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-3.6-flash')
     except Exception:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-3.5-flash')
 
     prompt = f"""
     ผู้ใช้มีความรู้สึกหรือคำร้องขอเกี่ยวกับเพลงดังนี้: "{mood_text}"
