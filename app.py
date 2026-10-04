@@ -2,6 +2,7 @@ import json
 import time
 from datetime import datetime
 import urllib.parse
+import re
 import requests
 import streamlit as st
 import streamlit.components.v1 as components
@@ -776,6 +777,26 @@ if 'ai_taste_recommendations' not in st.session_state:
 # ==========================================
 # 5. Helper Functions
 # ==========================================
+def format_ai_analysis_to_html(text):
+    """จัดรูปแบบ Markdown ข้อความของ AI ให้แสดงผลสวยงามและ fit ใน Glass Card"""
+    if not text:
+        return ""
+    # แปลง **ข้อความตัวหนา** ให้เป็นสีเขียว
+    formatted = re.sub(r'\*\*(.*?)\*\*', r'<strong style="color: #1ed760; font-weight: 600;">\1</strong>', text)
+    lines = formatted.split('\n')
+    html_lines = []
+    for line in lines:
+        l = line.strip()
+        if not l:
+            continue
+        if l.startswith('- ') or l.startswith('* '):
+            html_lines.append(f'<li style="margin-left: 20px; margin-bottom: 6px; color: #e0e0e0; line-height: 1.6;">{l[2:]}</li>')
+        elif any(l.startswith(f"{i}.") for i in range(1, 10)):
+            html_lines.append(f'<div style="font-size: 1.05rem; margin-top: 16px; margin-bottom: 8px; font-weight: 600; color: #ffffff;">{l}</div>')
+        else:
+            html_lines.append(f'<p style="margin-bottom: 12px; line-height: 1.7; color: rgba(255, 255, 255, 0.92);">{l}</p>')
+    return "".join(html_lines)
+
 @st.cache_data(ttl=3600)
 def fetch_live_track_info(title, artist, tag):
     try:
@@ -1229,15 +1250,30 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
                     st.session_state.ai_taste_recommendations = ai_response.get('songs', [])
                     st.toast("วิเคราะห์รสนิยมดนตรีเสร็จสิ้น!", icon="🎉")
 
-        # แสดงผลการวิเคราะห์ถ้ามีข้อมูล
+        # แสดงผลการวิเคราะห์ใน Glassmorphism Card (Fit in สมบูรณ์แบบ)
         if st.session_state.ai_taste_analysis:
-            st.markdown("""
-            <div style="background: rgba(18, 22, 34, 0.85); backdrop-filter: blur(16px); padding: 22px; border-radius: 18px; border: 1px solid rgba(29, 185, 84, 0.4); margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                <h3 style="color: #1DB954 !important; margin-top:0; font-size: 1.3rem;">🔮 ผลการวิเคราะห์รสนิยมดนตรีของคุณ</h3>
+            content_html = format_ai_analysis_to_html(st.session_state.ai_taste_analysis)
+            
+            st.markdown(f"""
+            <div style="
+                background: rgba(18, 22, 34, 0.88); 
+                backdrop-filter: blur(20px) saturate(180%);
+                -webkit-backdrop-filter: blur(20px) saturate(180%);
+                padding: 24px; 
+                border-radius: 20px; 
+                border: 1px solid rgba(29, 185, 84, 0.45); 
+                margin-top: 20px; 
+                margin-bottom: 25px;
+                box-shadow: 0 12px 35px rgba(0,0,0,0.6);
+            ">
+                <h3 style="color: #1DB954 !important; margin-top:0; margin-bottom: 16px; font-size: 1.35rem; display: flex; align-items: center; gap: 8px;">
+                    🔮 ผลการวิเคราะห์รสนิยมดนตรีของคุณ
+                </h3>
+                <div style="font-size: 0.98rem; color: #ffffff;">
+                    {content_html}
+                </div>
             </div>
             """, unsafe_allow_html=True)
-            
-            st.markdown(st.session_state.ai_taste_analysis)
 
             if st.session_state.ai_taste_recommendations:
                 st.markdown("#### 🎵 เพลงเพิ่มเติมที่ AI คัดสรรมาให้เหมาะกับรสนิยมของคุณ:")
@@ -1379,4 +1415,3 @@ if st.session_state.current_preview_url:
         start_idx = 0
 
     render_liquid_music_player(playlist=active_player_playlist, start_index=start_idx, autoplay=True)
-
