@@ -1,6 +1,7 @@
 import json
 import time
 from datetime import datetime
+import urllib.parse
 import requests
 import streamlit as st
 import streamlit.components.v1 as components
@@ -28,7 +29,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ลิงก์รูปภาพพื้นหลังสำรอง (วิวธรรมชาติ) และ ลิงก์วิดีโอ
+# ลิงก์รูปภาพพื้นหลังสำรอง และ ลิงก์วิดีโอ
 BG_IMAGE_URL = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2000&auto=format&fit=crop"
 BG_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_083109_283f3553-e28f-428b-a723-d639c617eb2b.mp4"
 
@@ -442,13 +443,12 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
     components.html(player_code, height=0, width=0)
 
 # ==========================================
-# 3. Responsive Custom CSS (แก้ไขระบบพื้นหลัง & การมองเห็นตัวอักษร)
+# 3. Responsive Custom CSS
 # ==========================================
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
-    /* 📌 กำหนดรูปภาพพื้นหลังหลัก + Overlay ซ้อนดำเพื่อความสมบูรณ์ */
     html, body, [data-testid="stAppViewContainer"] {{
         background: url('{BG_IMAGE_URL}') no-repeat center center fixed !important;
         background-size: cover !important;
@@ -456,7 +456,6 @@ st.markdown(f"""
         color: #ffffff !important;
     }}
 
-    /* แผ่น Overlay สีมืดแบบบาง เพื่อให้ข้อความสว่างชัดเจนเหนือพื้นหลัง */
     [data-testid="stAppViewContainer"]::before {{
         content: "";
         position: fixed;
@@ -474,7 +473,6 @@ st.markdown(f"""
         color: #ffffff !important;
     }}
 
-    /* วิดีโอพื้นหลัง (ถ้าเลเยอร์วิดีโอเล่นได้ จะซ้อนทับภาพนิ่งขึ้นมา) */
     #bg-video {{
         position: fixed;
         top: 0;
@@ -487,13 +485,11 @@ st.markdown(f"""
         pointer-events: none;
     }}
 
-    /* ข้อความ หัวข้อ และเนื้อหาทั้งหมด */
     h1, h2, h3, h4, h5, h6, p, span, div, label {{
         color: #ffffff !important;
         text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
     }}
 
-    /* การ์ดสถิติ st.metric */
     div[data-testid="stMetric"] {{
         background: rgba(18, 18, 24, 0.82) !important;
         backdrop-filter: blur(14px) !important;
@@ -517,7 +513,6 @@ st.markdown(f"""
         text-shadow: 0 0 12px rgba(29, 185, 84, 0.6) !important;
     }}
 
-    /* Label / หัวข้อของทุก Widget */
     label, 
     .stWidgetLabel, 
     div[data-testid="stWidgetLabel"] label,
@@ -530,7 +525,6 @@ st.markdown(f"""
         text-shadow: 0 2px 5px rgba(0, 0, 0, 0.95) !important;
     }}
 
-    /* กล่องพิมพ์ข้อความ (Textarea & Text Input) */
     div[data-baseweb="input"],
     div[data-baseweb="textarea"] {{
         background: rgba(18, 18, 22, 0.88) !important;
@@ -559,7 +553,6 @@ st.markdown(f"""
         color: rgba(255, 255, 255, 0.65) !important;
     }}
 
-    /* Selectbox / Dropdown & Slider */
     div[data-baseweb="select"] > div {{
         background: rgba(18, 18, 22, 0.88) !important;
         border: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -585,7 +578,6 @@ st.markdown(f"""
         text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
     }}
 
-    /* ปุ่มกด */
     iframe,
     iframe[title="streamlit_mic_recorder.speech_to_text"],
     div[data-testid="stCustomComponentV1"],
@@ -623,7 +615,6 @@ st.markdown(f"""
         box-shadow: 0 8px 25px rgba(29, 185, 84, 0.45) !important;
     }}
 
-    /* Radio Navigation Bar */
     div[data-testid="stRadio"] > div[role="radiogroup"] {{
         display: flex !important;
         flex-direction: row !important;
@@ -658,7 +649,6 @@ st.markdown(f"""
         display: none !important;
     }}
 
-    /* Spotify Card Component */
     .spotify-card {{
         background: rgba(18, 18, 24, 0.75);
         backdrop-filter: blur(16px);
@@ -741,7 +731,6 @@ st.markdown(f"""
         color: #ffffff;
     }}
 
-    /* Expander */
     div[data-testid="stExpander"] {{
         background: rgba(18, 18, 22, 0.8) !important;
         border: 1px solid rgba(255, 255, 255, 0.25) !important;
@@ -782,7 +771,7 @@ if 'history' not in st.session_state:
     st.session_state.history = []
 
 # ==========================================
-# 5. Helper Functions
+# 5. Helper Functions (แก้ไขจุดแมพรูปปก)
 # ==========================================
 @st.cache_data(ttl=3600)
 def fetch_live_track_info(title, artist, tag):
@@ -798,15 +787,27 @@ def fetch_live_track_info(title, artist, tag):
 
     fallback_img = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80"
     
-    cover = img_url if img_url else (track_info.get('album_cover') if track_info else fallback_img)
-    preview = preview_url if preview_url else (track_info.get('preview_url') if track_info else None)
-    spotify_link = full_url if full_url else (track_info.get('spotify_url') if track_info else f"https://open.spotify.com/search/{title}%20{artist}")
+    # 📌 แก้ไขจุดนี้: ให้ความสำคัญกับรูปปกจาก Spotify มาก่อนเสมอ
+    spotify_cover = track_info.get('album_cover') if track_info else None
+    cover = spotify_cover if spotify_cover else (img_url if img_url else fallback_img)
+    
+    # ลำดับความสำคัญตัวอย่างเพลง
+    spotify_preview = track_info.get('preview_url') if track_info else None
+    preview = spotify_preview if spotify_preview else preview_url
+
+    # ลิงก์ฟังเพลงเต็ม
+    encoded_search = urllib.parse.quote(f"{title} {artist}")
+    spotify_link = (track_info.get('spotify_url') if track_info else None) or full_url or f"https://open.spotify.com/search/{encoded_search}"
     spotify_id = track_info.get('id') if track_info else None
+
+    # ดึงชื่อเพลงและชื่อศิลปินทางการหากค้นจาก Spotify เจอ
+    official_title = track_info.get('name') if track_info else title
+    official_artist = track_info.get('artist') if track_info else artist
 
     return {
         "id": spotify_id,
-        "name": title,
-        "artist": artist,
+        "name": official_title,
+        "artist": official_artist,
         "tag": tag,
         "cover": cover,
         "preview": preview,
@@ -1062,8 +1063,8 @@ if nav_choice == "🎧 AI DJ Studio":
                         track_data = fetch_live_track_info(song['title'], song['artist'], dj_persona)
                         track_info = {
                             'id': track_data.get('id'),
-                            'name': song['title'],
-                            'artist': song['artist'],
+                            'name': track_data['name'],
+                            'artist': track_data['artist'],
                             'album_cover': track_data['cover'],
                             'preview_url': track_data['preview'],
                             'spotify_url': track_data['spotify_url'],
