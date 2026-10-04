@@ -10,17 +10,22 @@ def get_playlist_from_ai(mood_text, num_songs):
         return None
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-3.6-flash')
+    
+    # ใช้ Gemini Flash รุ่นมาตรฐานเพื่อความเสถียร
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+    except Exception:
+        model = genai.GenerativeModel('gemini-2.0-flash')
 
     prompt = f"""
-    ผู้ใช้มีความรู้สึกดังนี้: "{mood_text}"
-    กรุณาทำหน้าที่เป็น AI DJ ผู้เห็นอกเห็นใจ
-    1. ให้คำพูดให้กำลังใจ/เข้าอกเข้าใจผู้ใช้ภาพรวมสั้นๆ 1 ย่อหน้า
+    ผู้ใช้มีความรู้สึกหรือคำร้องขอเกี่ยวกับเพลงดังนี้: "{mood_text}"
+    กรุณาทำหน้าที่เป็น AI DJ และผู้เชี่ยวชาญด้านวิเคราะห์ดนตรี
+    1. ให้คำพูดวิเคราะห์/คำแนะนำ/ความรู้สึกภาพรวมสั้นๆ 1 ย่อหน้า
     2. แนะนำเพลงจำนวน {num_songs} เพลง ที่เข้ากับอารมณ์นี้ (เน้นเพลงดังที่มีใน Spotify)
     
     ส่งคำตอบกลับมาในรูปแบบ JSON เท่านั้น โครงสร้างดังนี้:
     {{
-        "encouragement": "คำพูดให้กำลังใจ...",
+        "encouragement": "คำพูดวิเคราะห์หรือคำแนะนำ...",
         "songs": [
             {{"title": "ชื่อเพลง", "artist": "ชื่อศิลปิน", "reason": "เหตุผลที่เลือกเพลงนี้ให้ (1 ประโยค)"}}
         ]
