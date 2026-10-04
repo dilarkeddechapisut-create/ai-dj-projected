@@ -63,11 +63,7 @@ st.markdown(f"""
         box-shadow: none !important;
     }}
 
-    /* ==========================================
-       Liquid Glass UI Components (Glassmorphism)
-       ========================================== */
-
-    /* Glass Buttons (เปลี่ยนปุ่มสีขาวเป็นกระจกใสมีมิติ) */
+    /* Liquid Glass UI Components */
     div.stButton > button {{
         background: rgba(255, 255, 255, 0.12) !important;
         backdrop-filter: blur(16px) saturate(180%) !important;
@@ -93,7 +89,6 @@ st.markdown(f"""
         transform: translateY(1px);
     }}
 
-    /* Primary Accent Button (ปุ่ม AI DJ จัดเพลง) */
     div.stButton > button[kind="primary"] {{
         background: linear-gradient(135deg, rgba(29, 185, 84, 0.85), rgba(20, 140, 60, 0.95)) !important;
         border: 1px solid rgba(255, 255, 255, 0.4) !important;
@@ -106,7 +101,6 @@ st.markdown(f"""
         box-shadow: 0 12px 30px rgba(29, 185, 84, 0.6) !important;
     }}
 
-    /* Glass Text Inputs / Areas / Selectboxes */
     div[data-baseweb="input"] > div,
     div[data-baseweb="textarea"] > div,
     div[data-baseweb="select"] > div {{
@@ -129,7 +123,6 @@ st.markdown(f"""
         color: rgba(255, 255, 255, 0.6) !important;
     }}
 
-    /* Spotify Top Radio Switcher */
     div[data-testid="stRadio"] > div[role="radiogroup"] {{
         display: flex !important;
         flex-direction: row !important;
@@ -173,7 +166,6 @@ st.markdown(f"""
         display: none !important;
     }}
 
-    /* Glass Spotify Cards */
     .spotify-card {{
         background: rgba(255, 255, 255, 0.07);
         backdrop-filter: blur(16px);
@@ -257,7 +249,6 @@ st.markdown(f"""
         text-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
     }}
 
-    /* Floating Player Box */
     div[data-key="floating_player_box"],
     div.st-key-floating_player_box,
     div[class*="st-key-floating_player_box"],
@@ -277,7 +268,6 @@ st.markdown(f"""
         box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8) !important;
     }}
 
-    /* Mobile Responsive Optimizations */
     @media (max-width: 768px) {{
         div[data-testid="stRadio"] > div[role="radiogroup"] {{
             flex-direction: column !important;
@@ -357,18 +347,19 @@ def fetch_live_track_info(title, artist, tag):
     }
 
 def handle_like_song(track, mood_prompt=""):
-    """ บันทึกเพลงโปรดพร้อมส่งข้อมูลไปยัง Google Sheets """
+    """ บันทึกเพลงโปรดพร้อมส่งข้อมูลแยกคอลัมน์ไปยัง Google Sheets """
     is_fav = any(f['name'] == track['name'] for f in st.session_state.favorites)
     if is_fav:
         st.session_state.favorites = [f for f in st.session_state.favorites if f['name'] != track['name']]
         st.toast(f"ลบ {track['name']} ออกจากรายการโปรดแล้ว", icon="🗑️")
     else:
         st.session_state.favorites.append(track)
-        # ส่งข้อมูลบันทึกลง Google Sheets
         try:
             current_mood = mood_prompt or st.session_state.user_input_text or "กดถูกใจจากรายการแนะนำ"
             save_feedback(
-                mood_text=f"{current_mood} | เพลง: {track['name']} - {track.get('artist', '')}",
+                mood_text=current_mood,
+                song_name=track['name'],
+                artist=track.get('artist', ''),
                 is_liked=True
             )
             st.toast(f"เพิ่ม {track['name']} ในเพลงโปรด & บันทึกลง Sheet เรียบร้อย! 💖", icon="✅")
@@ -661,7 +652,7 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
                         st.button("🔇 ไม่มีตัวอย่าง", key=f"fav_noplay_{idx}", disabled=True, use_container_width=True)
                 
                 with f_col2:
-                    if st.button("🗑️", key=f"fav_remove_{idx}", use_container_width=True):
+                    if st.button("🗑️️", key=f"fav_remove_{idx}", use_container_width=True):
                         handle_like_song(fav_track)
                         st.rerun()
 
