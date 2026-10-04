@@ -409,7 +409,7 @@ with top_c1:
 
 with top_c2:
     user_email = st.session_state.user.get('email', 'User')
-    st.markdown(f"<div class="user-badge">👤 {user_email}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='user-badge'>👤 {user_email}</div>", unsafe_allow_html=True)
     if st.button("🚪 ออกจากระบบ", key="logout_btn"):
         st.session_state.user = None
         st.session_state.playlist = []
