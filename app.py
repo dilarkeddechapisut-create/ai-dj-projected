@@ -768,6 +768,10 @@ if 'favorites' not in st.session_state:
     st.session_state.favorites = []
 if 'history' not in st.session_state:
     st.session_state.history = []
+if 'ai_taste_analysis' not in st.session_state:
+    st.session_state.ai_taste_analysis = ""
+if 'ai_taste_recommendations' not in st.session_state:
+    st.session_state.ai_taste_recommendations = []
 
 # ==========================================
 # 5. Helper Functions
@@ -1161,25 +1165,25 @@ elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์"
                     st.rerun()
 
 # ------------------------------------------
-# PAGE 3: 📊 สถิติ & บทวิเคราะห์ (เลือก AI GEN หรือ รายการโปรด)
+# PAGE 3: 📊 สถิติ & วิเคราะห์รสนิยมดนตรี (AI Audio Features Profile)
 # ------------------------------------------
 elif nav_choice == "📊 สถิติ & วิเคราะห์":
-    st.subheader("📈 วิเคราะห์สถิติอารมณ์ของ Playlist (ด้วย FreqBlog API)")
+    st.subheader("📈 วิเคราะห์สถิติอารมณ์และรสนิยมดนตรี")
     
-    # ปุ่มเลือกแหล่งข้อมูลเพลงที่ต้องการวิเคราะห์
+    # เลือกชุดเพลงที่ต้องการวิเคราะห์
     analysis_source = st.radio(
         "🎯 เลือกชุดเพลงที่ต้องการวิเคราะห์:",
-        ["✨ เพลงจาก AI DJ Studio", "❤️ เพลงในรายการโปรด"],
+        ["❤️ เพลงในรายการโปรด", "✨ เพลงจาก AI DJ Studio"],
         horizontal=True,
         key="analysis_source_radio"
     )
     
-    if analysis_source == "✨ เพลงจาก AI DJ Studio":
-        target_playlist = st.session_state.playlist
-        source_name = "AI DJ Studio"
-    else:
+    if analysis_source == "❤️ เพลงในรายการโปรด":
         target_playlist = st.session_state.favorites
         source_name = "รายการโปรด"
+    else:
+        target_playlist = st.session_state.playlist
+        source_name = "AI DJ Studio"
 
     if len(target_playlist) > 0:
         m_col1, m_col2, m_col3 = st.columns(3)
@@ -1187,20 +1191,98 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
         m_col2.metric("สถานะ FreqBlog API", "พร้อมใช้งาน 🟢")
         m_col3.metric("เพลงที่มีไฟล์ตัวอย่าง", f"{sum(1 for t in target_playlist if t.get('preview_url'))} เพลง")
 
+        # 1. แสดง Radar Chart สถิติ Audio Features
         with st.spinner(f"กำลังดึงข้อมูล Audio Features ของ{source_name} จาก FreqBlog API..."):
             try:
                 fig = create_radar_chart(target_playlist)
                 if fig:
                     st.plotly_chart(fig, use_container_width=True)
                 else:
-                    st.warning("ไม่สามารถวิเคราะห์ข้อมูลจาก FreqBlog ได้ในขณะนี้")
+                    st.warning("ไม่สามารถวิเคราะห์ข้อมูลกราฟจาก FreqBlog ได้ในขณะนี้")
             except Exception as e:
                 st.error(f"เกิดข้อผิดพลาดในการสร้างกราฟ: {e}")
+
+        st.divider()
+
+        # 2. ฟีเจอร์ AI วิเคราะห์รสนิยมดนตรีและแนะนำเพลง
+        st.markdown(f"### 🤖 AI วิเคราะห์รสนิยมดนตรีจาก Audio Features ({source_name})")
+        st.write("วิเคราะห์ลักษณะอารมณ์ทางดนตรี เช่น Energy, Danceability, Valence และ Acousticness เพื่อถอดรหัสตัวตนดนตรีของคุณ")
+
+        if st.button(f"✨ ให้ AI ถอดรหัสรสนิยม & แนะนำเพลงจาก{source_name}", type="primary", use_container_width=True):
+            with st.spinner("🧠 AI กำลังประมวลผล Audio Features และสร้างบทวิเคราะห์รสนิยมของคุณ..."):
+                songs_summary = ", ".join([f"'{t.get('name')}' โดย {t.get('artist', 'ไม่ระบุ')}" for t in target_playlist])
+                
+                taste_prompt = f"""
+                [บทบาท: ผู้เชี่ยวชาญด้าน Musicology และ AI Audio Feature Analyst]
+                รบกวนวิเคราะห์รสนิยมการฟังเพลงของผู้ใช้ จากรายชื่อเพลงใน{source_name}ดังต่อไปนี้:
+                {songs_summary}
+
+                โปรดตอบและสรุปออกมาในหัวข้อดังนี้:
+                1. 🎭 **โปรไฟล์รสนิยมดนตรี (Music Taste Profile):** วิเคราะห์สรุปภาพรวมลักษณะทางเสียง (Energy, Danceability, Valence/Emotional Mood, Acousticness, Tempo) ว่าผู้ใช้นี้ชอบฟังเพลงแนวไหน สไตล์อย่างไร และสะท้อนตัวตนหรืออารมณ์แบบไหน
+                2. 🎧 **ช่วงเวลาและบรรยากาศที่เหมาะกับคุณ:** บอกกิจกรรม สถานการณ์ หรือช่วงเวลาที่เหมาะที่สุดกับการฟังเพลงสไตล์นี้
+                3. 🌟 **แนะนำ 4 เพลงที่เหมาะกับรสนิยมของคุณเพิ่มเติม:** เลือกเพลงเพิ่มเติมที่มีค่า Audio Features และมู้ดใกล้เคียงกันพร้อมอธิบายเหตุผลสั้นๆ
+                """
+
+                ai_response = get_playlist_from_ai(taste_prompt, num_songs=4)
+                if ai_response:
+                    st.session_state.ai_taste_analysis = ai_response.get('encouragement', '')
+                    st.session_state.ai_taste_recommendations = ai_response.get('songs', [])
+                    st.toast("วิเคราะห์รสนิยมดนตรีเสร็จสิ้น!", icon="🎉")
+
+        # แสดงผลการวิเคราะห์ถ้ามีข้อมูล
+        if st.session_state.ai_taste_analysis:
+            st.markdown("""
+            <div style="background: rgba(18, 22, 34, 0.85); backdrop-filter: blur(16px); padding: 22px; border-radius: 18px; border: 1px solid rgba(29, 185, 84, 0.4); margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <h3 style="color: #1DB954 !important; margin-top:0; font-size: 1.3rem;">🔮 ผลการวิเคราะห์รสนิยมดนตรีของคุณ</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(st.session_state.ai_taste_analysis)
+
+            if st.session_state.ai_taste_recommendations:
+                st.markdown("#### 🎵 เพลงเพิ่มเติมที่ AI คัดสรรมาให้เหมาะกับรสนิยมของคุณ:")
+                rec_cols = st.columns(len(st.session_state.ai_taste_recommendations))
+                
+                for idx, rec_song in enumerate(st.session_state.ai_taste_recommendations):
+                    rec_track = fetch_live_track_info(rec_song['title'], rec_song['artist'], "AI Matching")
+                    with rec_cols[idx % len(rec_cols)]:
+                        st.markdown(f"""
+                        <div class="spotify-card">
+                            <div class="spotify-card-img-wrapper">
+                                <img src="{rec_track['cover']}" class="spotify-card-img" alt="Cover">
+                            </div>
+                            <div class="spotify-card-title">{rec_track['name']}</div>
+                            <div class="spotify-card-subtitle">{rec_track['artist']}</div>
+                            <div style="font-size:0.78rem; color:#bbb; margin-top:6px; font-style:italic;">{rec_song.get('reason', '')[:60]}...</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        r_col1, r_col2 = st.columns([1.2, 0.8])
+                        with r_col1:
+                            if st.button("▶️ ฟังตัวอย่าง", key=f"rec_play_{idx}", use_container_width=True):
+                                st.session_state.current_preview_url = rec_track['preview']
+                                st.session_state.current_track_name = rec_track['name']
+                                st.rerun()
+                        with r_col2:
+                            is_fav = any(f['name'] == rec_track['name'] for f in st.session_state.favorites)
+                            if st.button("❤️" if is_fav else "🤍", key=f"rec_fav_{idx}", use_container_width=True):
+                                track_dict = {
+                                    'id': rec_track.get('id'),
+                                    'name': rec_track['name'],
+                                    'artist': rec_track['artist'],
+                                    'album_cover': rec_track['cover'],
+                                    'preview_url': rec_track.get('preview'),
+                                    'spotify_url': rec_track['spotify_url'],
+                                    'reason': rec_song.get('reason', '')
+                                }
+                                handle_like_song(track_dict, mood_prompt="AI วิเคราะห์จาก Audio Features")
+                                st.rerun()
+
     else:
-        if analysis_source == "✨ เพลงจาก AI DJ Studio":
-            st.info("💡 ยังไม่มีเพลงจาก AI DJ! กรุณาสร้างเพลย์ลิสต์ในหน้า 'AI DJ Studio' ก่อน เพื่อดูการวิเคราะห์สถิติอารมณ์เพลง")
+        if analysis_source == "❤️ เพลงในรายการโปรด":
+            st.info("💡 ยังไม่มีเพลงในรายการโปรด! กรุณากดหัวใจ ❤️ ที่การ์ดเพลงในหน้าต่างๆ เพื่อเพิ่มเพลงเข้าในรายการโปรด แล้วกลับมาวิเคราะห์รสนิยมดนตรีได้เลยครับ")
         else:
-            st.info("💡 ยังไม่มีเพลงในรายการโปรด! กรุณากดหัวใจ ❤️ ที่การ์ดเพลงในหน้าต่างๆ เพื่อเพิ่มเพลงเข้าในรายการโปรดก่อนครับ")
+            st.info("💡 ยังไม่มีเพลงจาก AI DJ! กรุณาสร้างเพลย์ลิสต์ในหน้า 'AI DJ Studio' ก่อน เพื่อดูการวิเคราะห์สถิติและรสนิยม")
 
 # ------------------------------------------
 # PAGE 4: ❤️ เพลงโปรด & ประวัติ
@@ -1210,7 +1292,6 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
     if len(st.session_state.favorites) > 0:
         fav_cols = st.columns(3)
         for idx, fav_track in enumerate(st.session_state.favorites):
-            # ตรวจสอบและซ่อมแซมรูปปก/ตัวอย่างเสียงกรณีข้อมูลเก่าหายไป
             track_cover = fav_track.get('album_cover')
             track_preview = fav_track.get('preview_url')
             
@@ -1299,36 +1380,3 @@ if st.session_state.current_preview_url:
 
     render_liquid_music_player(playlist=active_player_playlist, start_index=start_idx, autoplay=True)
 
-# ==========================================
-# 9. Google Sheets Connection Verification
-# ==========================================
-st.write("---")
-st.subheader("🔍 ระบบตรวจสอบการเชื่อมต่อ Google Sheets")
-
-url = st.secrets.get("APPS_SCRIPT_URL", "")
-st.write(f"**1. URL ใน Secrets:** `{url}`")
-
-if not url:
-    st.error("❌ ไม่พบ APPS_SCRIPT_URL ในไฟล์ secrets.toml")
-else:
-    if st.button("🧪 ทดสอบยิงข้อมูลลง Sheet จาก Streamlit"):
-        try:
-            payload = {
-                "action_type": "MOOD_LOG",
-                "user_email": "streamlit_test@gmail.com",
-                "mood_text": "ทดสอบยิงจาก Streamlit UI"
-            }
-            headers = {"User-Agent": "Mozilla/5.0"}
-            
-            response = requests.get(url, params=payload, headers=headers, timeout=10)
-            
-            st.write(f"**2. HTTP Status Code:** `{response.status_code}`")
-            st.write(f"**3. ข้อความตอบรับจาก Google:** `{response.text}`")
-            
-            if "Success" in response.text:
-                st.success("🎉 บันทึกลลง Google Sheet สำเร็จแล้ว!")
-            else:
-                st.warning("⚠️ การส่งข้อมูลสำเร็จ แต่ Google ตอบกลับข้อความอื่น")
-                
-        except Exception as e:
-            st.error(f"❌ เกิดข้อผิดพลาดใน Python: {e}")
