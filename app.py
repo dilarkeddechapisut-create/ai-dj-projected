@@ -12,7 +12,7 @@ from ai_service import get_playlist_from_ai
 from spotify_service import search_spotify_track
 from stats_service import create_radar_chart
 from feedback_service import save_feedback, save_mood_history, get_user_saved_data
-from preview_service import get_track_preview
+from preview_service import get_track_preview, DEFAULT_COVER, FALLBACK_AUDIO_URL
 from auth_service import (
     sign_in_with_email_and_password, 
     sign_up_with_email_and_password, 
@@ -29,7 +29,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ลิงก์รูปภาพพื้นหลังสำรอง และ ลิงก์วิดีโอ
 BG_IMAGE_URL = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2000&auto=format&fit=crop"
 BG_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_083109_283f3553-e28f-428b-a723-d639c617eb2b.mp4"
 
@@ -771,7 +770,7 @@ if 'history' not in st.session_state:
     st.session_state.history = []
 
 # ==========================================
-# 5. Helper Functions (แก้ไขจุดแมพรูปปก)
+# 5. Helper Functions
 # ==========================================
 @st.cache_data(ttl=3600)
 def fetch_live_track_info(title, artist, tag):
@@ -783,24 +782,18 @@ def fetch_live_track_info(title, artist, tag):
     try:
         img_url, preview_url, full_url = get_track_preview(title, artist)
     except Exception:
-        img_url, preview_url, full_url = None, None, None
+        img_url, preview_url, full_url = DEFAULT_COVER, FALLBACK_AUDIO_URL, None
 
-    fallback_img = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80"
-    
-    # 📌 แก้ไขจุดนี้: ให้ความสำคัญกับรูปปกจาก Spotify มาก่อนเสมอ
     spotify_cover = track_info.get('album_cover') if track_info else None
-    cover = spotify_cover if spotify_cover else (img_url if img_url else fallback_img)
+    cover = spotify_cover if spotify_cover else (img_url if img_url else DEFAULT_COVER)
     
-    # ลำดับความสำคัญตัวอย่างเพลง
     spotify_preview = track_info.get('preview_url') if track_info else None
-    preview = spotify_preview if spotify_preview else preview_url
+    preview = spotify_preview if spotify_preview else (preview_url if preview_url else FALLBACK_AUDIO_URL)
 
-    # ลิงก์ฟังเพลงเต็ม
     encoded_search = urllib.parse.quote(f"{title} {artist}")
     spotify_link = (track_info.get('spotify_url') if track_info else None) or full_url or f"https://open.spotify.com/search/{encoded_search}"
     spotify_id = track_info.get('id') if track_info else None
 
-    # ดึงชื่อเพลงและชื่อศิลปินทางการหากค้นจาก Spotify เจอ
     official_title = track_info.get('name') if track_info else title
     official_artist = track_info.get('artist') if track_info else artist
 
@@ -1105,14 +1098,11 @@ if nav_choice == "🎧 AI DJ Studio":
                 
                 btn_c1, btn_c2, btn_c3 = st.columns([1.2, 0.8, 1])
                 with btn_c1:
-                    if track_info.get('preview_url'):
-                        if st.button("▶️ ฟังตัวอย่าง", key=f"play_dj_{i}", use_container_width=True):
-                            st.session_state.current_preview_url = track_info['preview_url']
-                            st.session_state.current_track_name = track_info['name']
-                            st.session_state.current_track_index = i
-                            st.rerun()
-                    else:
-                        st.button("🔇 ไม่มีเสียง", key=f"noplay_dj_{i}", disabled=True, use_container_width=True)
+                    if st.button("▶️ ฟังตัวอย่าง", key=f"play_dj_{i}", use_container_width=True):
+                        st.session_state.current_preview_url = track_info['preview_url']
+                        st.session_state.current_track_name = track_info['name']
+                        st.session_state.current_track_index = i
+                        st.rerun()
                 
                 with btn_c2:
                     is_fav = any(f['name'] == track_info['name'] for f in st.session_state.favorites)
@@ -1150,17 +1140,14 @@ elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์"
             
             p_col1, p_col2 = st.columns([1.5, 1])
             with p_col1:
-                if song.get('preview'):
-                    if st.button("▶️ ฟังตัวอย่าง", key=f"grid_play_{selected_mood}_{idx}", use_container_width=True):
-                        st.session_state.current_preview_url = song['preview']
-                        st.session_state.current_track_name = song['name']
-                        st.rerun()
-                else:
-                    st.button("🔇 ไม่มีตัวอย่าง", key=f"grid_noplay_{selected_mood}_{idx}", disabled=True, use_container_width=True)
+                if st.button("▶️ ฟังตัวอย่าง", key=f"grid_play_{selected_mood}_{idx}", use_container_width=True):
+                    st.session_state.current_preview_url = song['preview']
+                    st.session_state.current_track_name = song['name']
+                    st.rerun()
             
             with p_col2:
                 is_fav = any(f['name'] == song['name'] for f in st.session_state.favorites)
-                if st.button("❤️" if is_fav else "🤍 เก็บไว้", key=f"grid_fav_{selected_mood}_{idx}", use_container_width=True):
+                if st.button("❤️️" if is_fav else "🤍 เก็บไว้", key=f"grid_fav_{selected_mood}_{idx}", use_container_width=True):
                     track_dict = {
                         'id': song.get('id'),
                         'name': song['name'],
@@ -1197,33 +1184,41 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
         st.info("💡 สร้างเพลย์ลิสต์ในหน้า 'AI DJ Studio' ก่อน เพื่อดูการวิเคราะห์สถิติอารมณ์เพลง")
 
 # ------------------------------------------
-# PAGE 4: ❤️ เพลงโปรด & ประวัติ
+# PAGE 4: ❤️ เพลงโปรด & ประวัติ (แก้ไขดึงข้อมูลพรีวิวใหม่อัตโนมัติ)
 # ------------------------------------------
 elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
-    st.subheader("❤️ เพลงโปรดที่คุณบันทึกไว้")
+    st.subheader("❤️️ เพลงโปรดที่คุณบันทึกไว้")
     if len(st.session_state.favorites) > 0:
         fav_cols = st.columns(3)
         for idx, fav_track in enumerate(st.session_state.favorites):
+            # ตรวจสอบและซ่อมแซมรูปปก/ตัวอย่างเสียงกรณีข้อมูลเก่าหายไป
+            track_cover = fav_track.get('album_cover')
+            track_preview = fav_track.get('preview_url')
+            
+            if not track_preview or not track_cover or track_cover == DEFAULT_COVER:
+                img_url, prev_url, full_url = get_track_preview(fav_track['name'], fav_track.get('artist', ''))
+                track_cover = track_cover or img_url or DEFAULT_COVER
+                track_preview = track_preview or prev_url or FALLBACK_AUDIO_URL
+                fav_track['album_cover'] = track_cover
+                fav_track['preview_url'] = track_preview
+
             with fav_cols[idx % 3]:
                 st.markdown(f"""
                 <div class="spotify-card">
                     <div class="spotify-card-img-wrapper">
-                        <img src="{fav_track.get('album_cover', 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400')}" class="spotify-card-img">
+                        <img src="{track_cover}" class="spotify-card-img" alt="Album Cover">
                     </div>
                     <div class="spotify-card-title">{fav_track['name']}</div>
-                    <div class="spotify-card-subtitle">{fav_track['artist']}</div>
+                    <div class="spotify-card-subtitle">{fav_track.get('artist', 'Unknown Artist')}</div>
                 </div>
                 """, unsafe_allow_html=True)
                 
                 f_col1, f_col2, f_col3 = st.columns([1.2, 0.8, 1])
                 with f_col1:
-                    if fav_track.get('preview_url'):
-                        if st.button("▶️ ฟังเพลงนี้", key=f"fav_play_page_{idx}", use_container_width=True):
-                            st.session_state.current_preview_url = fav_track['preview_url']
-                            st.session_state.current_track_name = fav_track['name']
-                            st.rerun()
-                    else:
-                        st.button("🔇 ไม่มีตัวอย่าง", key=f"fav_noplay_{idx}", disabled=True, use_container_width=True)
+                    if st.button("▶️ ฟังเพลงนี้", key=f"fav_play_page_{idx}", use_container_width=True):
+                        st.session_state.current_preview_url = track_preview
+                        st.session_state.current_track_name = fav_track['name']
+                        st.rerun()
                 
                 with f_col2:
                     if st.button("🗑", key=f"fav_remove_{idx}", use_container_width=True):
@@ -1260,7 +1255,7 @@ if st.session_state.playlist:
             active_player_playlist.append({
                 "title": track.get('name', 'Unknown'),
                 "artist": track.get('artist', 'Unknown Artist'),
-                "cover": track.get('album_cover', 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300'),
+                "cover": track.get('album_cover', DEFAULT_COVER),
                 "url": track.get('preview_url')
             })
 
@@ -1277,7 +1272,7 @@ if st.session_state.current_preview_url:
         standalone_track = {
             "title": st.session_state.current_track_name or "Unknown Track",
             "artist": "DJ Moody Stream",
-            "cover": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300",
+            "cover": DEFAULT_COVER,
             "url": st.session_state.current_preview_url
         }
         active_player_playlist.insert(0, standalone_track)
