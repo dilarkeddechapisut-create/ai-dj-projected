@@ -587,7 +587,9 @@ st.markdown(f"""
         box-shadow: none !important;
     }}
 
-    div.stButton > button {{
+    /* ปรับแต่งปุ่มกดทั่วไปและปุ่ม Streaming ให้สไตล์ Glassmorphism กลมกลืนเหมือนกัน */
+    div.stButton > button,
+    div.stLinkButton > a {{
         background: rgba(255, 255, 255, 0.15) !important;
         backdrop-filter: blur(16px) saturate(180%) !important;
         -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
@@ -598,9 +600,16 @@ st.markdown(f"""
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
         transition: all 0.25s ease-in-out !important;
         width: 100% !important;
+        text-align: center !important;
+        text-decoration: none !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0.4rem 0.8rem !important;
     }}
 
-    div.stButton > button:hover {{
+    div.stButton > button:hover,
+    div.stLinkButton > a:hover {{
         background: rgba(255, 255, 255, 0.3) !important;
         border-color: rgba(255, 255, 255, 0.6) !important;
         box-shadow: 0 10px 35px 0 rgba(29, 185, 84, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
@@ -650,12 +659,15 @@ st.markdown(f"""
     }}
 
     .spotify-card {{
-        background: rgba(18, 18, 24, 0.75);
+        background: rgba(18, 18, 24, 0.82);
         backdrop-filter: blur(16px);
         border: 1px solid rgba(255, 255, 255, 0.22);
         border-radius: 16px;
         padding: 14px;
         margin-bottom: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }}
 
     .spotify-card-img-wrapper {{
@@ -679,7 +691,7 @@ st.markdown(f"""
 
     .spotify-card-title {{
         font-weight: 700;
-        font-size: 0.95rem;
+        font-size: 0.98rem;
         color: #ffffff;
         white-space: nowrap;
         overflow: hidden;
@@ -687,7 +699,7 @@ st.markdown(f"""
     }}
 
     .spotify-card-subtitle {{
-        font-size: 0.82rem;
+        font-size: 0.85rem;
         color: #cccccc;
         white-space: nowrap;
         overflow: hidden;
@@ -1070,7 +1082,8 @@ if nav_choice == "🎧 AI DJ Studio":
                     energy_level=energy_level
                 )
 
-                augmented_prompt = f"[สไตล์ DJ: {dj_persona}] [ระดับพลังงานเพลง: {energy_level}] ความรู้สึกผู้ใช้: {mood_text}"
+                # สั่งควบคุมให้ AI ตอบข้อความทักทายกระชับสั้น ไม่ยาวเกินไป
+                augmented_prompt = f"[สไตล์ DJ: {dj_persona}] [ระดับพลังงานเพลง: {energy_level}] [ข้อแนะนำ: ตอบข้อความทักทายให้กำลังใจแบบกระชับสั้นๆ ไม่เกิน 2 ประโยค] ความรู้สึกผู้ใช้: {mood_text}"
                 ai_result = get_playlist_from_ai(augmented_prompt, num_songs)
                 
                 if ai_result:
@@ -1105,19 +1118,45 @@ if nav_choice == "🎧 AI DJ Studio":
 
     if len(st.session_state.playlist) > 0:
         st.success("🎉 จัดเพลย์ลิสต์เสร็จเรียบร้อย!")
-        st.markdown(f"### 💌 ข้อความจาก {dj_persona}:\n> *{st.session_state.ai_message}*")
+        
+        # ปรับปรุงเน้นกล่องข้อความจาก DJ ให้อ่านง่าย ชัดเจน ตัวหนาบนพื้นหลังเข้ม
+        st.markdown(f"""
+        <div style="
+            background: rgba(18, 22, 34, 0.88);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(29, 185, 84, 0.5);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin: 15px 0 20px 0;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+        ">
+            <div style="font-size: 1.15rem; font-weight: 700; color: #1DB954 !important; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                💌 ข้อความจาก {dj_persona}
+            </div>
+            <div style="font-size: 1.02rem; font-weight: 500; color: #ffffff !important; line-height: 1.6; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
+                "{st.session_state.ai_message}"
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
         cols = st.columns(3)
         for i, track_info in enumerate(st.session_state.playlist):
+            reason_text = track_info.get('reason', 'เพลงนี้เหมาะกับบรรยากาศของคุณพอดี!')
+            
             with cols[i % 3]:
+                # เพิ่ม "💡 คำแนะนำจาก DJ:" และปรับให้คำแนะนำแสดงผลเต็มกล่อง ไม่โดนตัดขาด
                 st.markdown(f"""
                 <div class="spotify-card">
-                    <div class="spotify-card-img-wrapper">
-                        <img src="{track_info['album_cover']}" class="spotify-card-img" alt="Cover">
+                    <div>
+                        <div class="spotify-card-img-wrapper">
+                            <img src="{track_info['album_cover']}" class="spotify-card-img" alt="Cover">
+                        </div>
+                        <div class="spotify-card-title">{track_info['name']}</div>
+                        <div class="spotify-card-subtitle">{track_info['artist']}</div>
+                        <div style="font-size:0.83rem; color:#e0e0e0; margin-top:10px; line-height:1.45; word-wrap: break-word;">
+                            <strong style="color: #1DB954;">💡 คำแนะนำจาก DJ:</strong> {reason_text}
+                        </div>
                     </div>
-                    <div class="spotify-card-title">{track_info['name']}</div>
-                    <div class="spotify-card-subtitle">{track_info['artist']}</div>
-                    <div style="font-size:0.8rem; color:#bbb; font-style:italic;">{track_info.get('reason', '')[:60]}...</div>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -1154,12 +1193,14 @@ elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์"
         with grid_cols[idx % 4]:
             st.markdown(f"""
             <div class="spotify-card">
-                <div class="spotify-card-img-wrapper">
-                    <img src="{song['cover']}" class="spotify-card-img" alt="Album Art">
+                <div>
+                    <div class="spotify-card-img-wrapper">
+                        <img src="{song['cover']}" class="spotify-card-img" alt="Album Art">
+                    </div>
+                    <span class="spotify-tag">{song['tag']}</span>
+                    <div class="spotify-card-title">{song['name']}</div>
+                    <div class="spotify-card-subtitle">{song['artist']}</div>
                 </div>
-                <span class="spotify-tag">{song['tag']}</span>
-                <div class="spotify-card-title">{song['name']}</div>
-                <div class="spotify-card-subtitle">{song['artist']}</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -1281,15 +1322,21 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
                 
                 for idx, rec_song in enumerate(st.session_state.ai_taste_recommendations):
                     rec_track = fetch_live_track_info(rec_song['title'], rec_song['artist'], "AI Matching")
+                    reason_rec = rec_song.get('reason', 'เหมาะกับแนวเพลงที่คุณชอบฟัง')
+                    
                     with rec_cols[idx % len(rec_cols)]:
                         st.markdown(f"""
                         <div class="spotify-card">
-                            <div class="spotify-card-img-wrapper">
-                                <img src="{rec_track['cover']}" class="spotify-card-img" alt="Cover">
+                            <div>
+                                <div class="spotify-card-img-wrapper">
+                                    <img src="{rec_track['cover']}" class="spotify-card-img" alt="Cover">
+                                </div>
+                                <div class="spotify-card-title">{rec_track['name']}</div>
+                                <div class="spotify-card-subtitle">{rec_track['artist']}</div>
+                                <div style="font-size:0.83rem; color:#e0e0e0; margin-top:8px; line-height:1.45; word-wrap: break-word;">
+                                    <strong style="color:#1DB954;">💡 คำแนะนำจาก DJ:</strong> {reason_rec}
+                                </div>
                             </div>
-                            <div class="spotify-card-title">{rec_track['name']}</div>
-                            <div class="spotify-card-subtitle">{rec_track['artist']}</div>
-                            <div style="font-size:0.78rem; color:#bbb; margin-top:6px; font-style:italic;">{rec_song.get('reason', '')[:60]}...</div>
                         </div>
                         """, unsafe_allow_html=True)
                         
@@ -1341,11 +1388,13 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
             with fav_cols[idx % 3]:
                 st.markdown(f"""
                 <div class="spotify-card">
-                    <div class="spotify-card-img-wrapper">
-                        <img src="{track_cover}" class="spotify-card-img" alt="Album Cover">
+                    <div>
+                        <div class="spotify-card-img-wrapper">
+                            <img src="{track_cover}" class="spotify-card-img" alt="Album Cover">
+                        </div>
+                        <div class="spotify-card-title">{fav_track['name']}</div>
+                        <div class="spotify-card-subtitle">{fav_track.get('artist', 'Unknown Artist')}</div>
                     </div>
-                    <div class="spotify-card-title">{fav_track['name']}</div>
-                    <div class="spotify-card-subtitle">{fav_track.get('artist', 'Unknown Artist')}</div>
                 </div>
                 """, unsafe_allow_html=True)
                 
