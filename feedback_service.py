@@ -1,13 +1,17 @@
 import requests
 import streamlit as st
 
-APPS_SCRIPT_URL = st.secrets["APPS_SCRIPT_URL"]
+def save_feedback(mood_text, is_liked=True, song_name="", artist=""):
+    """ส่งข้อมูลประวัติการกดถูกใจเพลงไปยัง Google Sheets อย่างปลอดภัย"""
+    # ดึง URL จาก secrets แบบปลอดภัย (หากยังไม่ตั้งค่าจะไม่ทำให้แอปพัง)
+    apps_script_url = st.secrets.get("APPS_SCRIPT_URL", "")
 
-def save_favorite_song(mood_text, song_name, artist="", is_liked=True):
-    """ส่งข้อมูลประวัติการกดถูกใจเพลงไปยัง Google Sheets"""
+    if not apps_script_url:
+        print("⚠️ Warning: APPS_SCRIPT_URL is not set in Secrets.")
+        return False
+
     try:
         feedback_status = "Like" if is_liked else "Dislike"
-        
         payload = {
             "mood_text": mood_text,
             "song_name": song_name,
@@ -15,16 +19,17 @@ def save_favorite_song(mood_text, song_name, artist="", is_liked=True):
             "feedback": feedback_status
         }
         
-        # ส่งข้อมูลแบบ JSON
         response = requests.post(
-            APPS_SCRIPT_URL,
+            apps_script_url,
             json=payload,
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=5
         )
-        
         return response.text.strip() == "Success"
         
     except Exception as e:
         print(f"API Error: {e}")
         return False
+
+# ตั้ง Alias รองรับการเรียกทั้งสองชื่อเพื่อกัน Error
+save_favorite_song = save_feedback
