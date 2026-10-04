@@ -33,7 +33,6 @@ st.set_page_config(
 BG_IMAGE_URL = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2000&auto=format&fit=crop"
 BG_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_083109_283f3553-e28f-428b-a723-d639c617eb2b.mp4"
 
-# ตั้งค่า Timezone ประเทศไทย (UTC+7)
 THAILAND_TZ = timezone(timedelta(hours=7))
 
 # ==========================================
@@ -800,16 +799,16 @@ if 'ai_taste_analysis' not in st.session_state:
     st.session_state.ai_taste_analysis = ""
 if 'ai_taste_recommendations' not in st.session_state:
     st.session_state.ai_taste_recommendations = []
+if 'selected_nav' not in st.session_state:
+    st.session_state.selected_nav = "🎧 AI DJ Studio"
 
 # ==========================================
 # 5. Helper Functions
 # ==========================================
 def get_thai_now():
-    """ดึงเวลาปัจจุบันใน Timezone ประเทศไทย (UTC+7)"""
     return datetime.now(THAILAND_TZ)
 
 def format_thai_time(time_val):
-    """แปลง ISO timestamp หรือ datetime string ให้เป็นเวลาไทย (UTC+7) รูปแบบอ่านง่าย"""
     if not time_val:
         return ""
     if isinstance(time_val, datetime):
@@ -841,14 +840,12 @@ def format_thai_time(time_val):
         return time_str
 
 def clean_song_title(title):
-    """ลบข้อความในวงเล็บหรืออักขระพิเศษออกจากชื่อเพลงเพื่อเพิ่มโอกาสการค้นหาเจอใน API"""
     if not title:
         return ""
     cleaned = re.sub(r'[\(\[\{].*?[\)\]\}]', '', title).strip()
     return cleaned if cleaned else title
 
 def format_ai_analysis_to_html(text):
-    """จัดรูปแบบ Markdown ข้อความของ AI ให้แสดงผลสวยงามและ fit ใน Glass Card"""
     if not text:
         return ""
     formatted = re.sub(r'\*\*(.*?)\*\*', r'<strong style="color: #1ed760; font-weight: 600;">\1</strong>', text)
@@ -866,18 +863,38 @@ def format_ai_analysis_to_html(text):
             html_lines.append(f'<p style="margin-bottom: 12px; line-height: 1.7; color: rgba(255, 255, 255, 0.92);">{l}</p>')
     return "".join(html_lines)
 
+def normalize_track_dict(track):
+    """ ปรับโครงสร้างข้อมูลเพลงให้มีคีย์มาตรฐาน (name, artist, cover, preview) """
+    if not isinstance(track, dict):
+        return {}
+    title = track.get('name') or track.get('song_name') or track.get('title') or ''
+    artist = track.get('artist') or track.get('artist_name') or ''
+    cover = track.get('album_cover') or track.get('cover') or DEFAULT_COVER
+    preview = track.get('preview_url') or track.get('preview') or FALLBACK_AUDIO_URL
+    spotify_url = track.get('spotify_url') or f"https://open.spotify.com/search/{urllib.parse.quote(f'{title} {artist}')}"
+    return {
+        'id': track.get('id') or track.get('spotify_id'),
+        'name': title,
+        'song_name': title,
+        'artist': artist,
+        'album_cover': cover,
+        'cover': cover,
+        'preview_url': preview,
+        'preview': preview,
+        'spotify_url': spotify_url,
+        'reason': track.get('reason', '')
+    }
+
 @st.cache_data(ttl=3600)
 def fetch_live_track_info(title, artist, tag):
     cleaned_title = clean_song_title(title)
     track_info = None
 
-    # Step 1: ค้นหาเพลงตรงๆ จาก Spotify
     try:
         track_info = search_spotify_track(title, artist)
     except Exception:
         pass
 
-    # Step 2: หากค้นหาตรงๆ ไม่พบ หรือได้รูปปกแบบ Default ให้ลองค้นหาด้วยชื่อเพลงที่ตัดวงเล็บออก
     if not track_info or not track_info.get('album_cover') or track_info.get('album_cover') == DEFAULT_COVER:
         if cleaned_title != title:
             try:
@@ -885,14 +902,12 @@ def fetch_live_track_info(title, artist, tag):
             except Exception:
                 pass
 
-    # Step 3: หากยังไม่พบ ให้ค้นหาด้วยชื่อเพลงคลีนๆ โดยไม่ต้องระบุชื่อศิลปิน
     if not track_info or not track_info.get('album_cover') or track_info.get('album_cover') == DEFAULT_COVER:
         try:
             track_info = search_spotify_track(cleaned_title, "")
         except Exception:
             pass
 
-    # Step 4: ค้นหาตัวอย่างเพลงและปกผ่าน iTunes Preview API สำรอง
     img_url, preview_url, full_url = None, None, None
     try:
         img_url, preview_url, full_url = get_track_preview(title, artist)
@@ -931,40 +946,42 @@ def fetch_live_track_info(title, artist, tag):
     }
 
 def handle_like_song(track, mood_prompt=""):
-    cover = track.get('album_cover') or track.get('cover') or DEFAULT_COVER
-    preview = track.get('preview_url') or track.get('preview') or FALLBACK_AUDIO_URL
-    track['album_cover'] = cover
-    track['cover'] = cover
-    track['preview_url'] = preview
-    track['preview'] = preview
-
-    is_fav = any(f['name'] == track['name'] for f in st.session_state.favorites)
+    norm_track = normalize_track_dict(track)
+    song_title = norm_track['name']
+    
+    is_fav = any(
+        (f.get('name') == song_title or f.get('song_name') == song_title)
+        for f in st.session_state.favorites
+    )
     user_email = st.session_state.user.get('email', 'Anonymous') if st.session_state.user else 'Anonymous'
     
     if is_fav:
-        st.session_state.favorites = [f for f in st.session_state.favorites if f['name'] != track['name']]
+        st.session_state.favorites = [
+            f for f in st.session_state.favorites 
+            if (f.get('name') != song_title and f.get('song_name') != song_title)
+        ]
         save_feedback(
             user_email=user_email,
             mood_text=mood_prompt or st.session_state.user_input_text or "ยกเลิกถูกใจ",
-            song_name=track['name'],
-            artist=track.get('artist', ''),
+            song_name=song_title,
+            artist=norm_track.get('artist', ''),
             is_liked=False
         )
-        st.toast(f"ลบ {track['name']} ออกจากรายการโปรดแล้ว", icon="🗑")
+        st.toast(f"ลบ {song_title} ออกจากรายการโปรดแล้ว", icon="🗑")
     else:
-        st.session_state.favorites.append(track)
+        st.session_state.favorites.append(norm_track)
         try:
             current_mood = mood_prompt or st.session_state.user_input_text or "กดถูกใจจากรายการแนะนำ"
             save_feedback(
                 user_email=user_email,
                 mood_text=current_mood,
-                song_name=track['name'],
-                artist=track.get('artist', ''),
+                song_name=song_title,
+                artist=norm_track.get('artist', ''),
                 is_liked=True
             )
-            st.toast(f"เพิ่ม {track['name']} ในเพลงโปรดเรียบร้อย! 💖", icon="✅")
+            st.toast(f"เพิ่ม {song_title} ในเพลงโปรดเรียบร้อย! 💖", icon="✅")
         except Exception:
-            st.toast(f"เพิ่ม {track['name']} ในเพลงโปรดแล้ว", icon="❤️")
+            st.toast(f"เพิ่ม {song_title} ในเพลงโปรดแล้ว", icon="❤️")
 
 # ==========================================
 # 6. Firebase Authentication View
@@ -995,7 +1012,8 @@ if st.session_state.user is None:
                             st.session_state.user = res["info"]
                             user_data = get_user_saved_data(login_email)
                             st.session_state.history = user_data.get("history", [])
-                            st.session_state.favorites = user_data.get("favorites", [])
+                            raw_favs = user_data.get("favorites", [])
+                            st.session_state.favorites = [normalize_track_dict(f) for f in raw_favs]
                             st.success("เข้าสู่ระบบสำเร็จ!")
                             time.sleep(0.5)
                             st.rerun()
@@ -1071,11 +1089,14 @@ with top_c2:
 
 st.write("")
 
+nav_options = ["🎧 AI DJ Studio", "🎵 สำรวจเพลงตามอารมณ์", "📊 สถิติ & วิเคราะห์", "❤️ เพลงโปรด & ประวัติ"]
+
 nav_choice = st.radio(
     "Navigation",
-    ["🎧 AI DJ Studio", "🎵 สำรวจเพลงตามอารมณ์", "📊 สถิติ & วิเคราะห์", "❤️ เพลงโปรด & ประวัติ"],
+    nav_options,
     horizontal=True,
-    label_visibility="collapsed"
+    label_visibility="collapsed",
+    key="main_navigation_radio"
 )
 
 st.divider()
@@ -1184,17 +1205,15 @@ if nav_choice == "🎧 AI DJ Studio":
                     
                     for song in ai_result.get('songs', []):
                         track_data = fetch_live_track_info(song['title'], song['artist'], dj_persona)
-                        track_info = {
+                        track_info = normalize_track_dict({
                             'id': track_data.get('id'),
                             'name': track_data['name'],
                             'artist': track_data['artist'],
                             'album_cover': track_data['cover'],
-                            'cover': track_data['cover'],
                             'preview_url': track_data['preview'],
-                            'preview': track_data['preview'],
                             'spotify_url': track_data['spotify_url'],
                             'reason': song.get('reason', '')
-                        }
+                        })
                         valid_tracks.append(track_info)
                     
                     st.session_state.playlist = valid_tracks
@@ -1262,7 +1281,7 @@ if nav_choice == "🎧 AI DJ Studio":
                         st.rerun()
                 
                 with btn_c2:
-                    is_fav = any(f['name'] == track_info['name'] for f in st.session_state.favorites)
+                    is_fav = any(f.get('name') == track_info['name'] for f in st.session_state.favorites)
                     if st.button("❤️" if is_fav else "🤍", key=f"fav_dj_{i}", use_container_width=True):
                         handle_like_song(track_info, mood_prompt=mood_text)
                         st.rerun()
@@ -1305,24 +1324,22 @@ elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์"
                     st.rerun()
             
             with p_col2:
-                is_fav = any(f['name'] == song['name'] for f in st.session_state.favorites)
+                is_fav = any(f.get('name') == song['name'] for f in st.session_state.favorites)
                 if st.button("❤" if is_fav else "🤍 เก็บไว้", key=f"grid_fav_{selected_mood}_{idx}", use_container_width=True):
-                    track_dict = {
+                    track_dict = normalize_track_dict({
                         'id': song.get('id'),
                         'name': song['name'],
                         'artist': song['artist'],
                         'album_cover': song['cover'],
-                        'cover': song['cover'],
                         'preview_url': song.get('preview'),
-                        'preview': song.get('preview'),
                         'spotify_url': song['spotify_url'],
                         'reason': f"เพลงแนะนำจากหมวด {selected_mood}"
-                    }
+                    })
                     handle_like_song(track_dict, mood_prompt=selected_mood)
                     st.rerun()
 
 # ------------------------------------------
-# PAGE 3: 📊 สถิติ & วิเคราะห์
+# PAGE 3: 📊 สถิติ & วิเคราะห์ (แก้ไขปรับปรุงแล้ว)
 # ------------------------------------------
 elif nav_choice == "📊 สถิติ & วิเคราะห์":
     st.subheader("📈 วิเคราะห์สถิติอารมณ์และรสนิยมดนตรี")
@@ -1334,18 +1351,19 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
         key="analysis_source_radio"
     )
     
-    if analysis_source == "❤ เพลงในรายการโปรด":
-        target_playlist = st.session_state.favorites
+    if analysis_source == "❤️ เพลงในรายการโปรด":
+        target_playlist = [normalize_track_dict(t) for t in st.session_state.favorites]
         source_name = "รายการโปรด"
     else:
-        target_playlist = st.session_state.playlist
+        target_playlist = [normalize_track_dict(t) for t in st.session_state.playlist]
         source_name = "AI DJ Studio"
 
     if len(target_playlist) > 0:
         m_col1, m_col2, m_col3 = st.columns(3)
         m_col1.metric("จำนวนเพลงทั้งหมด", f"{len(target_playlist)} เพลง")
         m_col2.metric("สถานะ FreqBlog API", "พร้อมใช้งาน 🟢")
-        m_col3.metric("เพลงที่มีไฟล์ตัวอย่าง", f"{sum(1 for t in target_playlist if (t.get('preview_url') or t.get('preview')))} เพลง")
+        preview_count = sum(1 for t in target_playlist if (t.get('preview_url') or t.get('preview')))
+        m_col3.metric("เพลงที่มีไฟล์ตัวอย่าง", f"{preview_count} เพลง")
 
         with st.spinner(f"กำลังดึงข้อมูล Audio Features ของ{source_name} จาก FreqBlog API..."):
             try:
@@ -1353,7 +1371,7 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
                 if fig:
                     st.plotly_chart(fig, use_container_width=True)
                 else:
-                    st.warning("ไม่สามารถวิเคราะห์ข้อมูลกราฟจาก FreqBlog ได้ในขณะนี้")
+                    st.warning(f"ไม่สามารถดึงข้อมูลค่าเสียงของเพลงใน{source_name}ได้ หรือเพลงไม่มีข้อมูลในระบบ API")
             except Exception as e:
                 st.error(f"เกิดข้อผิดพลาดในการสร้างกราฟ: {e}")
 
@@ -1364,7 +1382,10 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
 
         if st.button(f"✨ ให้ AI ถอดรหัสรสนิยม & แนะนำเพลงจาก{source_name}", type="primary", use_container_width=True):
             with st.spinner("🧠 AI กำลังประมวลผล Audio Features และสร้างบทวิเคราะห์รสนิยมของคุณ..."):
-                songs_summary = ", ".join([f"'{t.get('name')}' โดย {t.get('artist', 'ไม่ระบุ')}" for t in target_playlist])
+                songs_summary = ", ".join([
+                    f"'{t.get('name') or t.get('song_name')}' โดย {t.get('artist', 'ไม่ระบุ')}" 
+                    for t in target_playlist
+                ])
                 
                 taste_prompt = f"""
                 [บทบาท: ผู้เชี่ยวชาญด้าน Musicology และ AI Audio Feature Analyst]
@@ -1438,36 +1459,36 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
                                 st.session_state.current_track_name = rec_track['name']
                                 st.rerun()
                         with r_col2:
-                            is_fav = any(f['name'] == rec_track['name'] for f in st.session_state.favorites)
+                            is_fav = any(f.get('name') == rec_track['name'] for f in st.session_state.favorites)
                             if st.button("❤️" if is_fav else "🤍", key=f"rec_fav_{idx}", use_container_width=True):
-                                track_dict = {
+                                track_dict = normalize_track_dict({
                                     'id': rec_track.get('id'),
                                     'name': rec_track['name'],
                                     'artist': rec_track['artist'],
                                     'album_cover': rec_track['cover'],
-                                    'cover': rec_track['cover'],
                                     'preview_url': rec_track.get('preview'),
-                                    'preview': rec_track.get('preview'),
                                     'spotify_url': rec_track['spotify_url'],
                                     'reason': rec_song.get('reason', '')
-                                }
+                                })
                                 handle_like_song(track_dict, mood_prompt="AI วิเคราะห์จาก Audio Features")
                                 st.rerun()
 
     else:
-        if analysis_source == "❤️ เพลงในรายการโปรด":
+        if analysis_source == "❤️️ เพลงในรายการโปรด":
             st.info("💡 ยังไม่มีเพลงในรายการโปรด! กรุณากดหัวใจ ❤️ ที่การ์ดเพลงในหน้าต่างๆ เพื่อเพิ่มเพลงเข้าในรายการโปรด แล้วกลับมาวิเคราะห์รสนิยมดนตรีได้เลยครับ")
         else:
             st.info("💡 ยังไม่มีเพลงจาก AI DJ! กรุณาสร้างเพลย์ลิสต์ในหน้า 'AI DJ Studio' ก่อน เพื่อดูการวิเคราะห์สถิติและรสนิยม")
 
 # ------------------------------------------
-# PAGE 4: ❤️ เพลงโปรด & ประวัติ
+# PAGE 4: ❤️ เพลงโปรด & ประวัติ (พร้อมระบบวิเคราะห์ทางลัด)
 # ------------------------------------------
 elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
     st.subheader("❤ เพลงโปรดที่คุณบันทึกไว้")
+
     if len(st.session_state.favorites) > 0:
         fav_cols = st.columns(3)
-        for idx, fav_track in enumerate(st.session_state.favorites):
+        for idx, raw_fav in enumerate(st.session_state.favorites):
+            fav_track = normalize_track_dict(raw_fav)
             track_cover = fav_track.get('album_cover') or fav_track.get('cover')
             track_preview = fav_track.get('preview_url') or fav_track.get('preview')
             
@@ -1475,14 +1496,11 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
                 live_info = fetch_live_track_info(
                     fav_track.get('name', ''), 
                     fav_track.get('artist', ''), 
-                    fav_track.get('tag', 'Favorite')
+                    'Favorite'
                 )
                 if live_info:
                     if live_info.get('cover') and live_info['cover'] != DEFAULT_COVER:
                         track_cover = live_info['cover']
-                    else:
-                        track_cover = fav_track.get('album_cover') or fav_track.get('cover') or DEFAULT_COVER
-                    
                     if live_info.get('preview'):
                         track_preview = live_info['preview']
 
@@ -1492,8 +1510,6 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
                     fav_track['preview'] = track_preview
                     if live_info.get('spotify_url'):
                         fav_track['spotify_url'] = live_info['spotify_url']
-                    if live_info.get('id'):
-                        fav_track['id'] = live_info['id']
 
             track_cover = track_cover or DEFAULT_COVER
 
@@ -1538,7 +1554,7 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
                 if item.get('playlist'):
                     st.write("**รายการเพลงที่เคยแนะนำ:**")
                     for s in item['playlist']:
-                        st.write(f"- {s['name']} - {s['artist']}")
+                        st.write(f"- {s.get('name') or s.get('song_name')} - {s.get('artist')}")
     else:
         st.caption("ยังไม่มีประวัติการจัดเพลย์ลิสต์ในระบบ")
 
@@ -1549,12 +1565,13 @@ active_player_playlist = []
 
 if st.session_state.playlist:
     for track in st.session_state.playlist:
-        if track.get('preview_url') or track.get('preview'):
+        norm = normalize_track_dict(track)
+        if norm.get('preview_url'):
             active_player_playlist.append({
-                "title": track.get('name', 'Unknown'),
-                "artist": track.get('artist', 'Unknown Artist'),
-                "cover": track.get('album_cover') or track.get('cover') or DEFAULT_COVER,
-                "url": track.get('preview_url') or track.get('preview')
+                "title": norm.get('name', 'Unknown'),
+                "artist": norm.get('artist', 'Unknown Artist'),
+                "cover": norm.get('album_cover') or DEFAULT_COVER,
+                "url": norm.get('preview_url')
             })
 
 if st.session_state.current_preview_url:
