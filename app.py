@@ -19,7 +19,7 @@ from auth_service import (
 # 1. Page Configuration
 # ==========================================
 st.set_page_config(
-    page_title="AI DJ Mood Matcher Pro",
+    page_title="DJ Moody",
     page_icon="🎧",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -318,7 +318,7 @@ def handle_like_song(track, mood_prompt=""):
 if st.session_state.user is None:
     st.markdown("""
     <div class="main-header">
-        <h1>🎧 AI DJ Mood Matcher Pro</h1>
+        <h1>🎧 DJ Moody</h1>
         <p style="color: #bbb;">กรุณาเข้าสู่ระบบก่อนเริ่มใช้งานเพื่อบันทึกประวัติส่วนตัว</p>
     </div>
     """, unsafe_allow_html=True)
@@ -404,7 +404,7 @@ top_c1, top_c2 = st.columns([3, 1])
 with top_c1:
     st.markdown("""
     <div class="main-header" style="text-align: left; margin-bottom: 0;">
-        <h1 style="font-size: 1.8rem; margin:0;">🎧 AI DJ Mood Matcher Pro</h1>
+        <h1 style="font-size: 1.8rem; margin:0;">🎧 DJ Moody</h1>
     </div>
     """, unsafe_allow_html=True)
 
