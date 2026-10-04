@@ -1,6 +1,9 @@
-import streamlit as st
+import json
 import time
 from datetime import datetime
+import requests
+import streamlit as st
+import streamlit.components.v1 as components
 from streamlit_mic_recorder import speech_to_text
 
 # นำเข้า Service ต่างๆ
@@ -28,7 +31,428 @@ st.set_page_config(
 BG_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_083109_283f3553-e28f-428b-a723-d639c617eb2b.mp4"
 
 # ==========================================
-# 2. Liquid Glass & Responsive CSS
+# 2. Liquid Glass Music Player Renderer
+# ==========================================
+def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
+    """
+    ฟังก์ชันสำหรับสร้าง Liquid Glass Floating Music Player ซ้อนบนหน้า Streamlit
+    """
+    if not playlist:
+        return
+
+    playlist_json = json.dumps(playlist)
+
+    player_code = f"""
+    <script>
+    (function() {{
+        const parentDoc = window.parent.document;
+        
+        // ลบตัวเล่นเดิมออกก่อนหากมีการ Rerun
+        const oldPlayer = parentDoc.getElementById('liquid-glass-player');
+        if (oldPlayer) {{
+            oldPlayer.remove();
+        }}
+
+        const playlist = {playlist_json};
+        let currentTrack = {start_index};
+        let isPlaying = {'true' if autoplay else 'false'};
+
+        // สร้าง DOM Element ของตัวเล่นเพลง
+        const player = parentDoc.createElement('div');
+        player.id = 'liquid-glass-player';
+        player.innerHTML = `
+            <style>
+                #liquid-glass-player {{
+                    position: fixed;
+                    bottom: 25px;
+                    right: 25px;
+                    width: 330px;
+                    padding: 16px 18px;
+                    border-radius: 22px;
+                    background: rgba(18, 22, 34, 0.65);
+                    backdrop-filter: blur(20px) saturate(180%);
+                    -webkit-backdrop-filter: blur(20px) saturate(180%);
+                    border: 1px solid rgba(255, 255, 255, 0.22);
+                    box-shadow: 0 12px 35px 0 rgba(0, 0, 0, 0.45),
+                                inset 0 1px 1px 0 rgba(255, 255, 255, 0.3);
+                    z-index: 999999;
+                    font-family: -apple-system, BlinkMacSystemFont, "Prompt", "Segoe UI", Roboto, sans-serif;
+                    color: #ffffff;
+                    user-select: none;
+                    transition: box-shadow 0.3s ease;
+                }}
+
+                #liquid-glass-player:hover {{
+                    box-shadow: 0 16px 45px 0 rgba(0, 0, 0, 0.6),
+                                inset 0 1px 2px 0 rgba(255, 255, 255, 0.4);
+                }}
+
+                .lg-drag-header {{
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    cursor: grab;
+                    padding-bottom: 8px;
+                    margin-bottom: 10px;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+                }}
+
+                .lg-drag-header:active {{
+                    cursor: grabbing;
+                }}
+
+                .lg-brand {{
+                    font-size: 11px;
+                    font-weight: 600;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                    color: #1DB954;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }}
+
+                .lg-close-btn {{
+                    background: transparent;
+                    border: none;
+                    color: rgba(255, 255, 255, 0.6);
+                    cursor: pointer;
+                    font-size: 13px;
+                    line-height: 1;
+                    padding: 2px 6px;
+                    border-radius: 50%;
+                    transition: all 0.2s;
+                }}
+
+                .lg-close-btn:hover {{
+                    color: #ffffff;
+                    background: rgba(255, 255, 255, 0.2);
+                }}
+
+                .lg-body {{
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }}
+
+                .lg-cover {{
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 14px;
+                    object-fit: cover;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    flex-shrink: 0;
+                }}
+
+                .lg-info {{
+                    flex: 1;
+                    min-width: 0;
+                }}
+
+                .lg-title {{
+                    font-size: 13px;
+                    font-weight: 600;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    color: #ffffff;
+                }}
+
+                .lg-artist {{
+                    font-size: 11px;
+                    color: rgba(255, 255, 255, 0.65);
+                    margin-top: 2px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }}
+
+                .lg-progress-container {{
+                    margin-top: 10px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }}
+
+                .lg-time {{
+                    font-size: 10px;
+                    color: rgba(255, 255, 255, 0.6);
+                    font-variant-numeric: tabular-nums;
+                }}
+
+                .lg-progress-bar {{
+                    flex: 1;
+                    height: 5px;
+                    background: rgba(255, 255, 255, 0.18);
+                    border-radius: 10px;
+                    overflow: hidden;
+                    cursor: pointer;
+                    position: relative;
+                }}
+
+                .lg-progress-fill {{
+                    height: 100%;
+                    width: 0%;
+                    background: linear-gradient(90deg, #1DB954, #1ed760);
+                    border-radius: 10px;
+                }}
+
+                .lg-controls {{
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 14px;
+                    margin-top: 10px;
+                }}
+
+                .lg-btn {{
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    color: white;
+                    border-radius: 50%;
+                    width: 34px;
+                    height: 34px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }}
+
+                .lg-btn:hover {{
+                    background: rgba(255, 255, 255, 0.25);
+                    transform: scale(1.08);
+                }}
+
+                .lg-btn:active {{
+                    transform: scale(0.95);
+                }}
+
+                .lg-btn-play {{
+                    width: 40px;
+                    height: 40px;
+                    background: #1DB954;
+                    border: 1px solid rgba(255, 255, 255, 0.4);
+                    box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4);
+                }}
+
+                .lg-btn-play:hover {{
+                    background: #1ed760;
+                }}
+            </style>
+
+            <div class="lg-drag-header" id="lg-drag-handle">
+                <span class="lg-brand">
+                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/>
+                        <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+                    </svg>
+                    DJ MOODY PLAYER
+                </span>
+                <button class="lg-close-btn" id="lg-close-btn" title="ปิดตัวเล่นเพลง">✖</button>
+            </div>
+
+            <div class="lg-body">
+                <img id="lg-cover-img" class="lg-cover" src="" alt="cover" />
+                <div class="lg-info">
+                    <div id="lg-title-text" class="lg-title"></div>
+                    <div id="lg-artist-text" class="lg-artist"></div>
+                </div>
+            </div>
+
+            <div class="lg-progress-container">
+                <span class="lg-time" id="lg-current-time">0:00</span>
+                <div class="lg-progress-bar" id="lg-progress-bar">
+                    <div class="lg-progress-fill" id="lg-progress-fill"></div>
+                </div>
+                <span class="lg-time" id="lg-duration">0:00</span>
+            </div>
+
+            <div class="lg-controls">
+                <button class="lg-btn" id="lg-prev-btn" title="เพลงก่อนหน้า">
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                </button>
+                <button class="lg-btn lg-btn-play" id="lg-play-btn" title="เล่น/หยุด">
+                    <svg id="lg-play-icon" width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+                <button class="lg-btn" id="lg-next-btn" title="เพลงถัดไป">
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                </button>
+            </div>
+
+            <audio id="lg-audio-element"></audio>
+        `;
+
+        parentDoc.body.appendChild(player);
+
+        // ดึง Elements
+        const audio = parentDoc.getElementById('lg-audio-element');
+        const playBtn = parentDoc.getElementById('lg-play-btn');
+        const playIcon = parentDoc.getElementById('lg-play-icon');
+        const prevBtn = parentDoc.getElementById('lg-prev-btn');
+        const nextBtn = parentDoc.getElementById('lg-next-btn');
+        const closeBtn = parentDoc.getElementById('lg-close-btn');
+        const titleText = parentDoc.getElementById('lg-title-text');
+        const artistText = parentDoc.getElementById('lg-artist-text');
+        const coverImg = parentDoc.getElementById('lg-cover-img');
+        const progressFill = parentDoc.getElementById('lg-progress-fill');
+        const progressBar = parentDoc.getElementById('lg-progress-bar');
+        const currentTimeEl = parentDoc.getElementById('lg-current-time');
+        const durationEl = parentDoc.getElementById('lg-duration');
+        const dragHandle = parentDoc.getElementById('lg-drag-handle');
+
+        function loadTrack(index) {{
+            currentTrack = index;
+            const track = playlist[currentTrack];
+            if (!track) return;
+            titleText.innerText = track.title || 'Unknown Title';
+            artistText.innerText = track.artist || 'Unknown Artist';
+            coverImg.src = track.cover || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300';
+            audio.src = track.url;
+            progressFill.style.width = '0%';
+            currentTimeEl.innerText = '0:00';
+            durationEl.innerText = '0:00';
+
+            if (isPlaying) {{
+                audio.play().then(() => {{
+                    playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+                }}).catch(() => {{
+                    isPlaying = false;
+                    playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+                }});
+            }} else {{
+                playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            }}
+        }}
+
+        function togglePlay() {{
+            if (audio.paused) {{
+                audio.play().then(() => {{
+                    isPlaying = true;
+                    playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+                }}).catch(e => console.log(e));
+            }} else {{
+                audio.pause();
+                isPlaying = false;
+                playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            }}
+        }}
+
+        playBtn.addEventListener('click', togglePlay);
+
+        prevBtn.addEventListener('click', () => {{
+            let index = currentTrack - 1;
+            if (index < 0) index = playlist.length - 1;
+            isPlaying = true;
+            loadTrack(index);
+        }});
+
+        nextBtn.addEventListener('click', () => {{
+            let index = (currentTrack + 1) % playlist.length;
+            isPlaying = true;
+            loadTrack(index);
+        }});
+
+        closeBtn.addEventListener('click', () => {{
+            audio.pause();
+            player.remove();
+        }});
+
+        audio.addEventListener('timeupdate', () => {{
+            if (audio.duration) {{
+                const pct = (audio.currentTime / audio.duration) * 100;
+                progressFill.style.width = pct + '%';
+                currentTimeEl.innerText = formatTime(audio.currentTime);
+                durationEl.innerText = formatTime(audio.duration);
+            }}
+        }});
+
+        audio.addEventListener('ended', () => {{
+            let index = (currentTrack + 1) % playlist.length;
+            isPlaying = true;
+            loadTrack(index);
+        }});
+
+        progressBar.addEventListener('click', (e) => {{
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            if (audio.duration) {{
+                audio.currentTime = (clickX / rect.width) * audio.duration;
+            }}
+        }});
+
+        function formatTime(sec) {{
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${{m}}:${{s < 10 ? '0' : ''}}${{s}}`;
+        }}
+
+        // ระบบลากขยับตำแหน่ง (Drag & Drop)
+        let isDragging = false;
+        let startX, startY, initialLeft, initialTop;
+
+        function onMouseDown(e) {{
+            if (e.target === closeBtn) return;
+            isDragging = true;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            const rect = player.getBoundingClientRect();
+            startX = clientX;
+            startY = clientY;
+            initialLeft = rect.left;
+            initialTop = rect.top;
+
+            player.style.bottom = 'auto';
+            player.style.right = 'auto';
+            player.style.left = initialLeft + 'px';
+            player.style.top = initialTop + 'px';
+
+            parentDoc.addEventListener('mousemove', onMouseMove);
+            parentDoc.addEventListener('mouseup', onMouseUp);
+            parentDoc.addEventListener('touchmove', onMouseMove);
+            parentDoc.addEventListener('touchend', onMouseUp);
+        }}
+
+        function onMouseMove(e) {{
+            if (!isDragging) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const deltaX = clientX - startX;
+            const deltaY = clientY - startY;
+
+            let newLeft = initialLeft + deltaX;
+            let newTop = initialTop + deltaY;
+
+            // บังคับไม่ให้ลากหลุดนอกจอ
+            newLeft = Math.max(10, Math.min(window.innerWidth - player.offsetWidth - 10, newLeft));
+            newTop = Math.max(10, Math.min(window.innerHeight - player.offsetHeight - 10, newTop));
+
+            player.style.left = newLeft + 'px';
+            player.style.top = newTop + 'px';
+        }}
+
+        function onMouseUp() {{
+            isDragging = false;
+            parentDoc.removeEventListener('mousemove', onMouseMove);
+            parentDoc.removeEventListener('mouseup', onMouseUp);
+            parentDoc.removeEventListener('touchmove', onMouseMove);
+            parentDoc.removeEventListener('touchend', onMouseUp);
+        }}
+
+        dragHandle.addEventListener('mousedown', onMouseDown);
+        dragHandle.addEventListener('touchstart', onMouseDown);
+
+        loadTrack(currentTrack);
+    }})();
+    </script>
+    """
+    components.html(player_code, height=0, width=0)
+
+# ==========================================
+# 3. Responsive CSS & Style
 # ==========================================
 st.markdown(f"""
 <style>
@@ -230,7 +654,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. State Management
+# 4. State Management
 # ==========================================
 if 'user' not in st.session_state:
     st.session_state.user = None
@@ -254,7 +678,7 @@ if 'history' not in st.session_state:
     st.session_state.history = []
 
 # ==========================================
-# 4. Helper Functions
+# 5. Helper Functions
 # ==========================================
 @st.cache_data(ttl=3600)
 def fetch_live_track_info(title, artist, tag):
@@ -313,7 +737,7 @@ def handle_like_song(track, mood_prompt=""):
             st.toast(f"เพิ่ม {track['name']} ในเพลงโปรดแล้ว", icon="❤️")
 
 # ==========================================
-# 5. Firebase Authentication View
+# 6. Firebase Authentication View
 # ==========================================
 if st.session_state.user is None:
     st.markdown("""
@@ -340,7 +764,6 @@ if st.session_state.user is None:
                         if res["success"]:
                             st.session_state.user = res["info"]
                             
-                            # 🔄 โหลดข้อมูลประวัติและเพลงโปรดของ User จาก Google Sheets
                             user_data = get_user_saved_data(login_email)
                             st.session_state.history = user_data.get("history", [])
                             st.session_state.favorites = user_data.get("favorites", [])
@@ -396,7 +819,7 @@ if st.session_state.user is None:
     st.stop()
 
 # ==========================================
-# 6. Main App Content (หลังเข้าสู่ระบบแล้ว)
+# 7. Main App Content (หลังเข้าสู่ระบบแล้ว)
 # ==========================================
 
 # Top User Bar Header
@@ -416,6 +839,7 @@ with top_c2:
         st.session_state.playlist = []
         st.session_state.favorites = []
         st.session_state.history = []
+        st.session_state.current_preview_url = None
         st.rerun()
 
 st.write("")
@@ -518,7 +942,6 @@ if nav_choice == "🎧 AI DJ Studio":
             with st.spinner("AI กำลังสวมบทบาท DJ และคัดสรรเพลย์ลิสต์..."):
                 current_user_email = st.session_state.user.get('email', 'Anonymous') if st.session_state.user else 'Anonymous'
                 
-                # บันทึกประวัติการบอกอารมณ์ลง Google Sheets
                 save_mood_history(
                     user_email=current_user_email,
                     mood_text=mood_text,
@@ -556,7 +979,7 @@ if nav_choice == "🎧 AI DJ Studio":
                         'message': ai_result.get('encouragement', '')
                     })
         else:
-            st.warning("⚠️️ กรุณาพิมพ์หรือเลือกความรู้สึกของคุณก่อนครับ")
+            st.warning("⚠ กรุณาพิมพ์หรือเลือกความรู้สึกของคุณก่อนครับ")
 
     if len(st.session_state.playlist) > 0:
         st.success("🎉 จัดเพลย์ลิสต์เสร็จเรียบร้อย!")
@@ -718,40 +1141,58 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
     else:
         st.caption("ยังไม่มีประวัติการจัดเพลย์ลิสต์ในระบบ")
 
-# Floating Audio Player Box
+# ==========================================
+# 8. Floating Liquid Glass Music Player Integration
+# ==========================================
+active_player_playlist = []
+
+# ดึงรายการเพลงจาก session_state.playlist มาใส่ตัวเล่นเพลง
+if st.session_state.playlist:
+    for track in st.session_state.playlist:
+        if track.get('preview_url'):
+            active_player_playlist.append({
+                "title": track.get('name', 'Unknown'),
+                "artist": track.get('artist', 'Unknown Artist'),
+                "cover": track.get('album_cover', 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300'),
+                "url": track.get('preview_url')
+            })
+
+# กรณีที่ผู้ใช้กดเล่นเพลงเฉพาะเพลงใดเพลงหนึ่ง
 if st.session_state.current_preview_url:
-    with st.container(key="floating_player_box"):
-        st.markdown('<div class="floating-marker"></div>', unsafe_allow_html=True)
-        
-        head_c1, head_c2 = st.columns([85, 15])
-        with head_c1:
-            st.markdown(
-                f"<div style='color:#1DB954; font-weight:bold; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;'>"
-                f"🎵 กำลังเล่นตัวอย่าง: {st.session_state.current_track_name}</div>",
-                unsafe_allow_html=True
-            )
-        with head_c2:
-            if st.button("✖", key="close_player", use_container_width=True):
-                st.session_state.current_preview_url = None
-                st.session_state.current_track_name = ""
-                st.rerun()
+    start_idx = 0
+    # ค้นหาว่าเพลงที่เลือ่อยู่ตรงกับดัชนีใดใน playlist
+    found = False
+    for idx, track_item in enumerate(active_player_playlist):
+        if track_item['url'] == st.session_state.current_preview_url:
+            start_idx = idx
+            found = True
+            break
+    
+    # หากเพลงที่กดฟังไม่อยู่ใน playlist (เช่น กดจากหน้าสำรวจ หรือหน้าเพลงโปรด)
+    if not found:
+        standalone_track = {
+            "title": st.session_state.current_track_name or "Unknown Track",
+            "artist": "DJ Moody Stream",
+            "cover": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300",
+            "url": st.session_state.current_preview_url
+        }
+        active_player_playlist.insert(0, standalone_track)
+        start_idx = 0
 
-        st.audio(st.session_state.current_preview_url, format="audio/mp3", autoplay=True)
+    render_liquid_music_player(playlist=active_player_playlist, start_index=start_idx, autoplay=True)
 
-        import streamlit as st
-import requests
-
+# ==========================================
+# 9. Google Sheets Connection Verification
+# ==========================================
 st.write("---")
 st.subheader("🔍 ระบบตรวจสอบการเชื่อมต่อ Google Sheets")
 
-# 1. เช็กว่าอ่าน URL จาก Secrets ได้ไหม
 url = st.secrets.get("APPS_SCRIPT_URL", "")
 st.write(f"**1. URL ใน Secrets:** `{url}`")
 
 if not url:
     st.error("❌ ไม่พบ APPS_SCRIPT_URL ในไฟล์ secrets.toml (กรุณาเช็กตำแหน่งไฟล์ .streamlit/secrets.toml)")
 else:
-    # 2. ปุ่มกดทดสอบยิงข้อมูลจาก Streamlit
     if st.button("🧪 ทดสอบยิงข้อมูลลง Sheet จาก Streamlit"):
         try:
             payload = {
@@ -759,7 +1200,6 @@ else:
                 "user_email": "streamlit_test@gmail.com",
                 "mood_text": "ทดสอบยิงจาก Streamlit UI"
             }
-            # ใส่ Header ป้องกัน Google บล็อก Python Request
             headers = {"User-Agent": "Mozilla/5.0"}
             
             response = requests.get(url, params=payload, headers=headers, timeout=10)
