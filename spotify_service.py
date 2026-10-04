@@ -19,15 +19,20 @@ def get_spotify_client():
 sp = get_spotify_client()
 
 def search_spotify_track(song_title, artist_name):
-    """ค้นหาเพลงใน Spotify เพื่อเอา รูปปก ลิงก์ และ ID (ไม่ดึง Audio Features จาก Spotify แล้ว)"""
+    """ค้นหาเพลงใน Spotify เพื่อเอา รูปปก ลิงก์ และ ID โดยปรับปรุงระบบค้นหาให้แม่นยำขึ้น"""
     if not sp:
         return None
 
     try:
         query = f"track:{song_title} artist:{artist_name}"
         results = sp.search(q=query, type='track', limit=1)
-        
         tracks = results.get('tracks', {}).get('items', [])
+        
+        if not tracks:
+            query_fallback = f"{song_title} {artist_name}"
+            results = sp.search(q=query_fallback, type='track', limit=1)
+            tracks = results.get('tracks', {}).get('items', [])
+
         if not tracks:
             return None
             
@@ -38,7 +43,7 @@ def search_spotify_track(song_title, artist_name):
         return {
             "id": track_id,
             "name": track['name'],
-            "artist": track['artists'][0]['name'],
+            "artist": ", ".join([a['name'] for a in track['artists']]),
             "album_cover": album_cover,
             "preview_url": track.get('preview_url'),
             "spotify_url": track['external_urls']['spotify']
