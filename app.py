@@ -801,6 +801,13 @@ if 'ai_taste_recommendations' not in st.session_state:
 # ==========================================
 # 5. Helper Functions
 # ==========================================
+def clean_song_title(title):
+    """ลบข้อความในวงเล็บหรืออักขระพิเศษออกจากชื่อเพลงเพื่อเพิ่มโอกาสการค้นหาเจอใน API"""
+    if not title:
+        return ""
+    cleaned = re.sub(r'[\(\[\{].*?[\)\]\}]', '', title).strip()
+    return cleaned if cleaned else title
+
 def format_ai_analysis_to_html(text):
     """จัดรูปแบบ Markdown ข้อความของ AI ให้แสดงผลสวยงามและ fit ใน Glass Card"""
     if not text:
@@ -822,23 +829,50 @@ def format_ai_analysis_to_html(text):
 
 @st.cache_data(ttl=3600)
 def fetch_live_track_info(title, artist, tag):
+    cleaned_title = clean_song_title(title)
+    track_info = None
+
+    # Step 1: ค้นหาเพลงตรงๆ จาก Spotify
     try:
         track_info = search_spotify_track(title, artist)
     except Exception:
-        track_info = None
+        pass
 
+    # Step 2: หากค้นหาตรงๆ ไม่พบ หรือได้รูปปกแบบ Default ให้ลองค้นหาด้วยชื่อเพลงที่ตัดวงเล็บออก
+    if not track_info or not track_info.get('album_cover') or track_info.get('album_cover') == DEFAULT_COVER:
+        if cleaned_title != title:
+            try:
+                track_info = search_spotify_track(cleaned_title, artist)
+            except Exception:
+                pass
+
+    # Step 3: หากยังไม่พบ ให้ค้นหาด้วยชื่อเพลงคลีนๆ โดยไม่ต้องระบุชื่อศิลปิน
+    if not track_info or not track_info.get('album_cover') or track_info.get('album_cover') == DEFAULT_COVER:
+        try:
+            track_info = search_spotify_track(cleaned_title, "")
+        except Exception:
+            pass
+
+    # Step 4: ค้นหาตัวอย่างเพลงและปกผ่าน iTunes Preview API สำรอง
+    img_url, preview_url, full_url = None, None, None
     try:
         img_url, preview_url, full_url = get_track_preview(title, artist)
     except Exception:
-        img_url, preview_url, full_url = DEFAULT_COVER, FALLBACK_AUDIO_URL, None
+        pass
+
+    if not img_url or img_url == DEFAULT_COVER:
+        try:
+            img_url, preview_url, full_url = get_track_preview(cleaned_title, artist)
+        except Exception:
+            pass
 
     spotify_cover = track_info.get('album_cover') if track_info else None
-    cover = spotify_cover if spotify_cover else (img_url if img_url else DEFAULT_COVER)
+    cover = spotify_cover if (spotify_cover and spotify_cover != DEFAULT_COVER) else (img_url if (img_url and img_url != DEFAULT_COVER) else DEFAULT_COVER)
     
     spotify_preview = track_info.get('preview_url') if track_info else None
     preview = spotify_preview if spotify_preview else (preview_url if preview_url else FALLBACK_AUDIO_URL)
 
-    encoded_search = urllib.parse.quote(f"{title} {artist}")
+    encoded_search = urllib.parse.quote(f"{cleaned_title} {artist}")
     spotify_link = (track_info.get('spotify_url') if track_info else None) or full_url or f"https://open.spotify.com/search/{encoded_search}"
     spotify_id = track_info.get('id') if track_info else None
 
@@ -1261,7 +1295,7 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
         key="analysis_source_radio"
     )
     
-    if analysis_source == "❤️ เพลงในรายการโปรด":
+    if analysis_source == "❤️️ เพลงในรายการโปรด":
         target_playlist = st.session_state.favorites
         source_name = "รายการโปรด"
     else:
@@ -1398,7 +1432,6 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
             track_cover = fav_track.get('album_cover') or fav_track.get('cover')
             track_preview = fav_track.get('preview_url') or fav_track.get('preview')
             
-            # หากไม่มีรูปปก หรือปกเป็น DEFAULT_COVER ให้เรียก fetch_live_track_info ค้นหาปกจริงจาก Spotify API
             if not track_cover or track_cover == DEFAULT_COVER or not track_preview or track_preview == FALLBACK_AUDIO_URL:
                 live_info = fetch_live_track_info(
                     fav_track.get('name', ''), 
