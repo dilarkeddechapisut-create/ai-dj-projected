@@ -1111,7 +1111,7 @@ if nav_choice == "🎧 AI DJ Studio":
                         st.rerun()
 
                 with btn_c3:
-                    st.link_button("🎶 streaming", track_info.get('spotify_url', '#'), use_container_width=True)
+                    st.link_button("🎶 Streaming", track_info.get('spotify_url', '#'), use_container_width=True)
 
 # ------------------------------------------
 # PAGE 2: 🎵 สำรวจเพลงตามอารมณ์
@@ -1147,7 +1147,7 @@ elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์"
             
             with p_col2:
                 is_fav = any(f['name'] == song['name'] for f in st.session_state.favorites)
-                if st.button("❤️️" if is_fav else "🤍 เก็บไว้", key=f"grid_fav_{selected_mood}_{idx}", use_container_width=True):
+                if st.button("❤" if is_fav else "🤍 เก็บไว้", key=f"grid_fav_{selected_mood}_{idx}", use_container_width=True):
                     track_dict = {
                         'id': song.get('id'),
                         'name': song['name'],
@@ -1161,19 +1161,35 @@ elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์"
                     st.rerun()
 
 # ------------------------------------------
-# PAGE 3: 📊 สถิติ & บทวิเคราะห์
+# PAGE 3: 📊 สถิติ & บทวิเคราะห์ (เลือก AI GEN หรือ รายการโปรด)
 # ------------------------------------------
 elif nav_choice == "📊 สถิติ & วิเคราะห์":
     st.subheader("📈 วิเคราะห์สถิติอารมณ์ของ Playlist (ด้วย FreqBlog API)")
-    if len(st.session_state.playlist) > 0:
-        m_col1, m_col2, m_col3 = st.columns(3)
-        m_col1.metric("จำนวนเพลงทั้งหมด", f"{len(st.session_state.playlist)} เพลง")
-        m_col2.metric("สถานะ FreqBlog API", "พร้อมใช้งาน 🟢")
-        m_col3.metric("เพลงที่มีไฟล์ตัวอย่าง", f"{sum(1 for t in st.session_state.playlist if t.get('preview_url'))} เพลง")
+    
+    # ปุ่มเลือกแหล่งข้อมูลเพลงที่ต้องการวิเคราะห์
+    analysis_source = st.radio(
+        "🎯 เลือกชุดเพลงที่ต้องการวิเคราะห์:",
+        ["✨ เพลงจาก AI DJ Studio", "❤️ เพลงในรายการโปรด"],
+        horizontal=True,
+        key="analysis_source_radio"
+    )
+    
+    if analysis_source == "✨ เพลงจาก AI DJ Studio":
+        target_playlist = st.session_state.playlist
+        source_name = "AI DJ Studio"
+    else:
+        target_playlist = st.session_state.favorites
+        source_name = "รายการโปรด"
 
-        with st.spinner("กำลังดึงข้อมูล Audio Features จาก FreqBlog API..."):
+    if len(target_playlist) > 0:
+        m_col1, m_col2, m_col3 = st.columns(3)
+        m_col1.metric("จำนวนเพลงทั้งหมด", f"{len(target_playlist)} เพลง")
+        m_col2.metric("สถานะ FreqBlog API", "พร้อมใช้งาน 🟢")
+        m_col3.metric("เพลงที่มีไฟล์ตัวอย่าง", f"{sum(1 for t in target_playlist if t.get('preview_url'))} เพลง")
+
+        with st.spinner(f"กำลังดึงข้อมูล Audio Features ของ{source_name} จาก FreqBlog API..."):
             try:
-                fig = create_radar_chart(st.session_state.playlist)
+                fig = create_radar_chart(target_playlist)
                 if fig:
                     st.plotly_chart(fig, use_container_width=True)
                 else:
@@ -1181,13 +1197,16 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
             except Exception as e:
                 st.error(f"เกิดข้อผิดพลาดในการสร้างกราฟ: {e}")
     else:
-        st.info("💡 สร้างเพลย์ลิสต์ในหน้า 'AI DJ Studio' ก่อน เพื่อดูการวิเคราะห์สถิติอารมณ์เพลง")
+        if analysis_source == "✨ เพลงจาก AI DJ Studio":
+            st.info("💡 ยังไม่มีเพลงจาก AI DJ! กรุณาสร้างเพลย์ลิสต์ในหน้า 'AI DJ Studio' ก่อน เพื่อดูการวิเคราะห์สถิติอารมณ์เพลง")
+        else:
+            st.info("💡 ยังไม่มีเพลงในรายการโปรด! กรุณากดหัวใจ ❤️ ที่การ์ดเพลงในหน้าต่างๆ เพื่อเพิ่มเพลงเข้าในรายการโปรดก่อนครับ")
 
 # ------------------------------------------
-# PAGE 4: ❤️ เพลงโปรด & ประวัติ (แก้ไขดึงข้อมูลพรีวิวใหม่อัตโนมัติ)
+# PAGE 4: ❤️ เพลงโปรด & ประวัติ
 # ------------------------------------------
 elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
-    st.subheader("❤️️ เพลงโปรดที่คุณบันทึกไว้")
+    st.subheader("❤ เพลงโปรดที่คุณบันทึกไว้")
     if len(st.session_state.favorites) > 0:
         fav_cols = st.columns(3)
         for idx, fav_track in enumerate(st.session_state.favorites):
@@ -1226,7 +1245,7 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
                         st.rerun()
 
                 with f_col3:
-                    st.link_button("🎶 streaming", fav_track.get('spotify_url', '#'), use_container_width=True)
+                    st.link_button("🎶 Streaming", fav_track.get('spotify_url', '#'), use_container_width=True)
     else:
         st.caption("ยังไม่มีเพลงโปรด กดหัวใจ ❤️ ที่การ์ดเพลงในหน้าต่างๆ เพื่อเพิ่มไว้ที่นี่ได้เลย")
 
