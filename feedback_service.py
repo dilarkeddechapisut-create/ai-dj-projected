@@ -2,7 +2,7 @@ import requests
 import streamlit as st
 
 def save_mood_history(user_email, mood_text, persona="", energy_level=""):
-    """ บันทึกประวัติการบอกอารมณ์ของผู้ใช้แต่ละคนลง Google Sheets """
+    """ บันทึกประวัติการบอกอารมณ์ของผู้ใช้ลง Google Sheets """
     apps_script_url = st.secrets.get("APPS_SCRIPT_URL", "")
 
     if not apps_script_url:
@@ -21,13 +21,12 @@ def save_mood_history(user_email, mood_text, persona="", energy_level=""):
             "feedback": "Search"
         }
         
-        response = requests.post(
+        response = requests.get(
             apps_script_url,
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            timeout=5
+            params=payload,
+            timeout=10
         )
-        return response.text.strip() == "Success"
+        return "Success" in response.text
         
     except Exception as e:
         print(f"API Error (save_mood_history): {e}")
@@ -35,7 +34,7 @@ def save_mood_history(user_email, mood_text, persona="", energy_level=""):
 
 
 def save_feedback(user_email, mood_text, song_name="", artist="", is_liked=True):
-    """ บันทึกประวัติการกดถูกใจ/ยกเลิกถูกใจเพลงของผู้ใช้ลง Google Sheets """
+    """ บันทึกประวัติการกดถูกใจ/ยกเลิกถูกใจเพลงลง Google Sheets """
     apps_script_url = st.secrets.get("APPS_SCRIPT_URL", "")
 
     if not apps_script_url:
@@ -55,13 +54,12 @@ def save_feedback(user_email, mood_text, song_name="", artist="", is_liked=True)
             "feedback": feedback_status
         }
         
-        response = requests.post(
+        response = requests.get(
             apps_script_url,
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            timeout=5
+            params=payload,
+            timeout=10
         )
-        return response.text.strip() == "Success"
+        return "Success" in response.text
         
     except Exception as e:
         print(f"API Error (save_feedback): {e}")
@@ -80,8 +78,8 @@ def get_user_saved_data(user_email):
     try:
         response = requests.get(
             apps_script_url,
-            params={"user_email": user_email},
-            timeout=5
+            params={"action": "FETCH_DATA", "user_email": user_email},
+            timeout=10
         )
         if response.status_code == 200:
             return response.json()
