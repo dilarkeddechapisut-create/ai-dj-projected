@@ -7,7 +7,7 @@ from streamlit_mic_recorder import speech_to_text
 from ai_service import get_playlist_from_ai
 from spotify_service import search_spotify_track
 from stats_service import create_radar_chart
-from feedback_service import save_feedback, save_mood_history
+from feedback_service import save_feedback, save_mood_history, get_user_saved_data
 from preview_service import get_track_preview
 from auth_service import (
     sign_in_with_email_and_password, 
@@ -296,7 +296,7 @@ def handle_like_song(track, mood_prompt=""):
             artist=track.get('artist', ''),
             is_liked=False
         )
-        st.toast(f"ลบ {track['name']} ออกจากรายการโปรดแล้ว", icon="🗑️️")
+        st.toast(f"ลบ {track['name']} ออกจากรายการโปรดแล้ว", icon="🗑")
     else:
         st.session_state.favorites.append(track)
         try:
@@ -335,10 +335,16 @@ if st.session_state.user is None:
             
             if st.button("🚀 เข้าสู่ระบบ", type="primary", use_container_width=True, key="login_btn"):
                 if login_email and login_pass:
-                    with st.spinner("กำลังตรวจสอบข้อมูล..."):
+                    with st.spinner("กำลังตรวจสอบข้อมูลและดึงประวัติส่วนตัว..."):
                         res = sign_in_with_email_and_password(login_email, login_pass)
                         if res["success"]:
                             st.session_state.user = res["info"]
+                            
+                            # 🔄 โหลดข้อมูลประวัติและเพลงโปรดของ User จาก Google Sheets
+                            user_data = get_user_saved_data(login_email)
+                            st.session_state.history = user_data.get("history", [])
+                            st.session_state.favorites = user_data.get("favorites", [])
+                            
                             st.success("เข้าสู่ระบบสำเร็จ!")
                             time.sleep(0.5)
                             st.rerun()
@@ -362,6 +368,8 @@ if st.session_state.user is None:
                             res = sign_up_with_email_and_password(signup_email, signup_pass)
                             if res["success"]:
                                 st.session_state.user = res["info"]
+                                st.session_state.history = []
+                                st.session_state.favorites = []
                                 st.success("สมัครสมาชิกสำเร็จและเข้าสู่ระบบเรียบร้อย!")
                                 time.sleep(0.5)
                                 st.rerun()
@@ -407,6 +415,7 @@ with top_c2:
         st.session_state.user = None
         st.session_state.playlist = []
         st.session_state.favorites = []
+        st.session_state.history = []
         st.rerun()
 
 st.write("")
@@ -547,7 +556,7 @@ if nav_choice == "🎧 AI DJ Studio":
                         'message': ai_result.get('encouragement', '')
                     })
         else:
-            st.warning("⚠️ กรุณาพิมพ์หรือเลือกความรู้สึกของคุณก่อนครับ")
+            st.warning("⚠️️ กรุณาพิมพ์หรือเลือกความรู้สึกของคุณก่อนครับ")
 
     if len(st.session_state.playlist) > 0:
         st.success("🎉 จัดเพลย์ลิสต์เสร็จเรียบร้อย!")
@@ -696,16 +705,18 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
         st.caption("ยังไม่มีเพลงโปรด กดหัวใจ ❤️ ที่การ์ดเพลงในหน้าต่างๆ เพื่อเพิ่มไว้ที่นี่และบันทึกลง Sheet ได้เลย")
 
     st.divider()
-    st.subheader("📜 ประวัติการจัดเพลย์ลิสต์ย้อนหลัง")
+    st.subheader("📜 ประวัติการใช้งานย้อนหลัง")
     if len(st.session_state.history) > 0:
         for item in st.session_state.history:
-            with st.expander(f"🕒 {item['time']} | {item['mood'][:30]}..."):
-                st.write(f"**คาแรกเตอร์:** {item['persona']}")
-                st.write(f"**ข้อความ AI:** {item['message']}")
-                for s in item['playlist']:
-                    st.write(f"- {s['name']} - {s['artist']}")
+            with st.expander(f"🕒 {item['time']} | {item['mood'][:40]}..."):
+                st.write(f"**สไตล์/คาแรกเตอร์:** {item.get('persona', '-')}")
+                st.write(f"**รายละเอียดอารมณ์:** {item.get('mood', '-')}")
+                if item.get('playlist'):
+                    st.write("**รายการเพลงที่เคยแนะนำ:**")
+                    for s in item['playlist']:
+                        st.write(f"- {s['name']} - {s['artist']}")
     else:
-        st.caption("ยังไม่มีประวัติการจัดเพลย์ลิสต์ในเซสชันนี้")
+        st.caption("ยังไม่มีประวัติการจัดเพลย์ลิสต์ในระบบ")
 
 # Floating Audio Player Box
 if st.session_state.current_preview_url:
