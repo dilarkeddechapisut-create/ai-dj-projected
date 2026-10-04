@@ -9,7 +9,6 @@ import streamlit.components.v1 as components
 from streamlit_mic_recorder import speech_to_text
 
 # นำเข้า Service ต่างๆ
-from ai_service import get_playlist_from_ai
 from spotify_service import search_spotify_track
 from stats_service import create_radar_chart
 from feedback_service import save_feedback, save_mood_history, get_user_saved_data
