@@ -9,6 +9,11 @@ from spotify_service import search_spotify_track
 from stats_service import create_radar_chart
 from feedback_service import save_feedback
 from preview_service import get_track_preview
+from auth_service import (
+    sign_in_with_email_and_password, 
+    sign_up_with_email_and_password, 
+    reset_password
+)
 
 # ==========================================
 # 1. Page Configuration
@@ -33,13 +38,11 @@ st.markdown(f"""
         font-family: 'Prompt', sans-serif;
     }}
 
-    /* ป้องกันหน้าจอดำสนิท หากวิดีโอพื้นหลังโหลดไม่ขึ้น */
     .stApp {{
         background-color: #121212 !important;
         color: #ffffff;
     }}
 
-    /* Video Background */
     #bg-video {{
         position: fixed;
         right: 0;
@@ -53,7 +56,6 @@ st.markdown(f"""
         filter: brightness(0.35);
     }}
 
-    /* Mic Recorder Component Glass Fix */
     iframe,
     iframe[title="streamlit_mic_recorder.speech_to_text"],
     div[data-testid="stCustomComponentV1"],
@@ -63,7 +65,6 @@ st.markdown(f"""
         box-shadow: none !important;
     }}
 
-    /* Liquid Glass UI Components */
     div.stButton > button {{
         background: rgba(255, 255, 255, 0.12) !important;
         backdrop-filter: blur(16px) saturate(180%) !important;
@@ -85,10 +86,6 @@ st.markdown(f"""
         color: #ffffff !important;
     }}
 
-    div.stButton > button:active {{
-        transform: translateY(1px);
-    }}
-
     div.stButton > button[kind="primary"] {{
         background: linear-gradient(135deg, rgba(29, 185, 84, 0.85), rgba(20, 140, 60, 0.95)) !important;
         border: 1px solid rgba(255, 255, 255, 0.4) !important;
@@ -96,31 +93,19 @@ st.markdown(f"""
         box-shadow: 0 8px 25px rgba(29, 185, 84, 0.4) !important;
     }}
 
-    div.stButton > button[kind="primary"]:hover {{
-        background: linear-gradient(135deg, rgba(30, 215, 96, 0.95), rgba(25, 160, 70, 1)) !important;
-        box-shadow: 0 12px 30px rgba(29, 185, 84, 0.6) !important;
-    }}
-
     div[data-baseweb="input"] > div,
-    div[data-baseweb="textarea"] > div,
-    div[data-baseweb="select"] > div {{
+    div[data-baseweb="textarea"] > div {{
         background: rgba(255, 255, 255, 0.08) !important;
         backdrop-filter: blur(14px) !important;
         -webkit-backdrop-filter: blur(14px) !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
         border-radius: 14px !important;
         color: #ffffff !important;
-        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.2) !important;
     }}
 
     div[data-baseweb="input"] input,
     div[data-baseweb="textarea"] textarea {{
         color: #ffffff !important;
-    }}
-
-    div[data-baseweb="input"] input::placeholder,
-    div[data-baseweb="textarea"] textarea::placeholder {{
-        color: rgba(255, 255, 255, 0.6) !important;
     }}
 
     div[data-testid="stRadio"] > div[role="radiogroup"] {{
@@ -131,7 +116,6 @@ st.markdown(f"""
         gap: 10px !important;
         background: rgba(18, 18, 18, 0.65);
         backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
         padding: 8px 16px;
         border-radius: 30px;
         border: 1px solid rgba(255, 255, 255, 0.15);
@@ -145,21 +129,13 @@ st.markdown(f"""
         border-radius: 20px !important;
         padding: 8px 18px !important;
         font-weight: 500 !important;
-        font-size: 0.9rem !important;
-        transition: all 0.25s ease !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    }}
-
-    div[data-testid="stRadio"] label:hover {{
-        background: rgba(255, 255, 255, 0.2) !important;
-        transform: translateY(-1px);
     }}
 
     div[data-testid="stRadio"] label[data-checked="true"] {{
         background: #1DB954 !important;
         color: #ffffff !important;
         font-weight: 700 !important;
-        box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4);
     }}
 
     div[data-testid="stRadio"] input[type="radio"] {{
@@ -169,20 +145,10 @@ st.markdown(f"""
     .spotify-card {{
         background: rgba(255, 255, 255, 0.07);
         backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
         border: 1px solid rgba(255, 255, 255, 0.18);
         border-radius: 16px;
         padding: 14px;
-        transition: all 0.3s ease;
         margin-bottom: 12px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    }}
-
-    .spotify-card:hover {{
-        background: rgba(255, 255, 255, 0.15);
-        transform: translateY(-4px);
-        border-color: rgba(255, 255, 255, 0.35);
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
     }}
 
     .spotify-card-img-wrapper {{
@@ -211,7 +177,6 @@ st.markdown(f"""
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-bottom: 2px;
     }}
 
     .spotify-card-subtitle {{
@@ -220,7 +185,6 @@ st.markdown(f"""
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-bottom: 6px;
     }}
 
     .spotify-tag {{
@@ -232,7 +196,6 @@ st.markdown(f"""
         padding: 2px 10px;
         border-radius: 10px;
         margin-bottom: 6px;
-        border: 1px solid rgba(29, 185, 84, 0.4);
     }}
 
     .main-header {{
@@ -245,46 +208,31 @@ st.markdown(f"""
         font-size: 2.2rem;
         font-weight: 800;
         color: #1DB954;
-        margin-bottom: 4px;
         text-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
     }}
 
-    div[data-key="floating_player_box"],
-    div.st-key-floating_player_box,
-    div[class*="st-key-floating_player_box"],
-    div[data-testid="stVerticalBlock"]:has(> div > div > div.floating-marker) {{
-        position: fixed !important;
-        bottom: 20px !important;
-        right: 20px !important;
-        width: 360px !important;
-        max-width: calc(100vw - 40px) !important;
-        background: rgba(18, 18, 18, 0.85) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 1.5px solid #1DB954 !important;
-        border-radius: 18px !important;
-        padding: 12px 14px !important;
-        z-index: 999999 !important;
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8) !important;
+    .auth-container {{
+        max-width: 420px;
+        margin: 40px auto;
+        padding: 30px;
+        background: rgba(18, 18, 18, 0.75);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.6);
     }}
 
-    @media (max-width: 768px) {{
-        div[data-testid="stRadio"] > div[role="radiogroup"] {{
-            flex-direction: column !important;
-            width: 100% !important;
-            border-radius: 20px !important;
-        }}
-        div[data-testid="stRadio"] label {{
-            width: 100% !important;
-            text-align: center !important;
-        }}
-        .main-header h1 {{
-            font-size: 1.6rem !important;
-        }}
-        div.stButton > button {{
-            padding: 10px 12px !important;
-            font-size: 0.85rem !important;
-        }}
+    .user-badge {{
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 6px 16px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        font-size: 0.88rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }}
 </style>
 
@@ -296,6 +244,8 @@ st.markdown(f"""
 # ==========================================
 # 3. State Management
 # ==========================================
+if 'user' not in st.session_state:
+    st.session_state.user = None
 if 'playlist' not in st.session_state:
     st.session_state.playlist = []
 if 'ai_message' not in st.session_state:
@@ -320,7 +270,6 @@ if 'history' not in st.session_state:
 # ==========================================
 @st.cache_data(ttl=3600)
 def fetch_live_track_info(title, artist, tag):
-    """ ดึงข้อมูลรูปและไฟล์เสียงสดๆ จาก Spotify/Preview Service """
     try:
         track_info = search_spotify_track(title, artist)
     except Exception:
@@ -347,8 +296,9 @@ def fetch_live_track_info(title, artist, tag):
     }
 
 def handle_like_song(track, mood_prompt=""):
-    """ บันทึกเพลงโปรดพร้อมส่งข้อมูลแยกคอลัมน์ไปยัง Google Sheets """
     is_fav = any(f['name'] == track['name'] for f in st.session_state.favorites)
+    user_email = st.session_state.user.get('email', '') if st.session_state.user else ''
+    
     if is_fav:
         st.session_state.favorites = [f for f in st.session_state.favorites if f['name'] != track['name']]
         st.toast(f"ลบ {track['name']} ออกจากรายการโปรดแล้ว", icon="🗑️")
@@ -357,23 +307,116 @@ def handle_like_song(track, mood_prompt=""):
         try:
             current_mood = mood_prompt or st.session_state.user_input_text or "กดถูกใจจากรายการแนะนำ"
             save_feedback(
-                mood_text=current_mood,
+                mood_text=f"[{user_email}] {current_mood}" if user_email else current_mood,
                 song_name=track['name'],
                 artist=track.get('artist', ''),
                 is_liked=True
             )
-            st.toast(f"เพิ่ม {track['name']} ในเพลงโปรด & บันทึกลง Sheet เรียบร้อย! 💖", icon="✅")
-        except Exception as e:
+            st.toast(f"เพิ่ม {track['name']} ในเพลงโปรดเรียบร้อย! 💖", icon="✅")
+        except Exception:
             st.toast(f"เพิ่ม {track['name']} ในเพลงโปรดแล้ว", icon="❤️")
 
 # ==========================================
-# 5. Header & Top Navigation
+# 5. Firebase Authentication View (หน้าเข้าสู่ระบบ)
 # ==========================================
-st.markdown("""
-<div class="main-header">
-    <h1>🎧 AI DJ Mood Matcher Pro</h1>
-</div>
-""", unsafe_allow_html=True)
+if st.session_state.user is None:
+    st.markdown("""
+    <div class="main-header">
+        <h1>🎧 AI DJ Mood Matcher Pro</h1>
+        <p style="color: #bbb;">กรุณาเข้าสู่ระบบด้วย Firebase ก่อนเริ่มใช้งาน</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    auth_col1, auth_col2, auth_col3 = st.columns([1, 2, 1])
+    
+    with auth_col2:
+        auth_mode = st.tabs(["🔐 เข้าสู่ระบบ", "📝 สมัครสมาชิก", "🔑 ลืมรหัสผ่าน"])
+        
+        # TAB 1: เข้าสู่ระบบ
+        with auth_mode[0]:
+            st.subheader("เข้าสู่ระบบ")
+            login_email = st.text_input("อีเมล", key="login_email_input", placeholder="your_email@gmail.com")
+            login_pass = st.text_input("รหัสผ่าน", type="password", key="login_pass_input")
+            
+            if st.button("🚀 เข้าสู่ระบบ", type="primary", use_container_width=True, key="login_btn"):
+                if login_email and login_pass:
+                    with st.spinner("กำลังตรวจสอบข้อมูล..."):
+                        res = sign_in_with_email_and_password(login_email, login_pass)
+                        if res["success"]:
+                            st.session_state.user = res["info"]
+                            st.success("เข้าสู่ระบบสำเร็จ!")
+                            time.sleep(0.5)
+                            st.rerun()
+                        else:
+                            st.error(res["error"])
+                else:
+                    st.warning("กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน")
+
+        # TAB 2: สมัครสมาชิก
+        with auth_mode[1]:
+            st.subheader("สร้างบัญชีใหม่")
+            signup_email = st.text_input("อีเมลสำหรับสมัคร", key="signup_email_input", placeholder="your_email@gmail.com")
+            signup_pass = st.text_input("รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)", type="password", key="signup_pass_input")
+            signup_confirm = st.text_input("ยืนยันรหัสผ่าน", type="password", key="signup_confirm_input")
+            
+            if st.button("✨ สมัครสมาชิก", type="primary", use_container_width=True, key="signup_btn"):
+                if signup_email and signup_pass and signup_confirm:
+                    if signup_pass != signup_confirm:
+                        st.error("รหัสผ่านทั้งสองช่องไม่ตรงกัน")
+                    else:
+                        with st.spinner("กำลังสร้างบัญชีผู้ใช้..."):
+                            res = sign_up_with_email_and_password(signup_email, signup_pass)
+                            if res["success"]:
+                                st.session_state.user = res["info"]
+                                st.success("สมัครสมาชิกสำเร็จและเข้าสู่ระบบเรียบร้อย!")
+                                time.sleep(0.5)
+                                st.rerun()
+                            else:
+                                st.error(res["error"])
+                else:
+                    st.warning("กรุณากรอกข้อมูลให้ครบทุกช่อง")
+
+        # TAB 3: ลืมรหัสผ่าน
+        with auth_mode[2]:
+            st.subheader("รีเซ็ตรหัสผ่าน")
+            reset_email_input = st.text_input("กรอกอีเมลของคุณ", key="reset_email_input")
+            
+            if st.button("📧 ส่งลิงก์รีเซ็ตรหัสผ่าน", use_container_width=True, key="reset_btn"):
+                if reset_email_input:
+                    with st.spinner("กำลังส่งอีเมล..."):
+                        res = reset_password(reset_email_input)
+                        if res["success"]:
+                            st.success("ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณเรียบร้อยแล้ว โปรดตรวจสอบใน กล่องข้อความ/Junk Mail")
+                        else:
+                            st.error(res["error"])
+                else:
+                    st.warning("กรุณากรอกอีเมล")
+
+    st.stop() # หยุดการทำงานไม่ให้เล่นส่วนแอปถ้ายังไม่ Login
+
+# ==========================================
+# 6. Main App Content (หลังเข้าสู่ระบบแล้ว)
+# ==========================================
+
+# Top User Bar Header
+top_c1, top_c2 = st.columns([3, 1])
+with top_c1:
+    st.markdown(f"""
+    <div class="main-header" style="text-align: left; margin-bottom: 0;">
+        <h1 style="font-size: 1.8rem; margin:0;">🎧 AI DJ Mood Matcher Pro</h1>
+    </div>
+    """, unsafe_allow_html=True)
+
+with top_c2:
+    user_email = st.session_state.user.get('email', 'User')
+    st.markdown(f"<div class="user-badge">👤 {user_email}</div>", unsafe_allow_html=True)
+    if st.button("🚪 ออกจากระบบ", key="logout_btn"):
+        st.session_state.user = None
+        st.session_state.playlist = []
+        st.session_state.favorites = []
+        st.rerun()
+
+st.write("")
 
 nav_choice = st.radio(
     "Navigation",
@@ -384,7 +427,6 @@ nav_choice = st.radio(
 
 st.divider()
 
-# MOOD PRESETS SEEDS
 MOOD_PRESETS_SEEDS = {
     "☕ ชิลล์ & ทำงาน (Focus & Chill)": [
         {"title": "Sunflower", "artist": "Post Malone", "tag": "Lofi / Chill"},
@@ -411,10 +453,6 @@ MOOD_PRESETS_SEEDS = {
         {"title": "Double Take", "artist": "dhruv", "tag": "R&B / Soul"}
     ]
 }
-
-# ==========================================
-# 6. Page Content Routing
-# ==========================================
 
 # ------------------------------------------
 # PAGE 1: 🎧 AI DJ STUDIO
@@ -550,16 +588,9 @@ if nav_choice == "🎧 AI DJ Studio":
 # PAGE 2: 🎵 สำรวจเพลงตามอารมณ์
 # ------------------------------------------
 elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์":
-    st.subheader("🎵 สำรวจเพลงตามหมวดหมู่อารมณ์ (Spotify Visual Grid)")
-    st.caption("เลือกฟีลลิ่งของคุณเพื่อดึงรูปและฟังเพลงสดใหม่จาก API ทันที")
+    st.subheader("🎵 สำรวจเพลงตามหมวดหมู่อารมณ์")
+    selected_mood = st.selectbox("🎯 เลือกหมวดหมู่อารมณ์:", list(MOOD_PRESETS_SEEDS.keys()))
 
-    selected_mood = st.selectbox(
-        "🎯 เลือกหมวดหมู่อารมณ์ที่ต้องการค้นหา:",
-        list(MOOD_PRESETS_SEEDS.keys())
-    )
-
-    st.markdown(f"#### 📂 เพลงแนะนำสดใหม่ในหมวดหมู่: `{selected_mood}`")
-    
     seeds = MOOD_PRESETS_SEEDS[selected_mood]
     grid_cols = st.columns(4)
     
@@ -652,7 +683,7 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
                         st.button("🔇 ไม่มีตัวอย่าง", key=f"fav_noplay_{idx}", disabled=True, use_container_width=True)
                 
                 with f_col2:
-                    if st.button("🗑️️", key=f"fav_remove_{idx}", use_container_width=True):
+                    if st.button("🗑", key=f"fav_remove_{idx}", use_container_width=True):
                         handle_like_song(fav_track)
                         st.rerun()
 
@@ -673,9 +704,7 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
     else:
         st.caption("ยังไม่มีประวัติการจัดเพลย์ลิสต์ในเซสชันนี้")
 
-# ==========================================
-# 7. Floating Player Box
-# ==========================================
+# Floating Audio Player Box
 if st.session_state.current_preview_url:
     with st.container(key="floating_player_box"):
         st.markdown('<div class="floating-marker"></div>', unsafe_allow_html=True)
