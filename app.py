@@ -1111,7 +1111,7 @@ if nav_choice == "🎧 AI DJ Studio":
                         st.rerun()
 
                 with btn_c3:
-                    st.link_button("🟢 Spotify", track_info.get('spotify_url', '#'), use_container_width=True)
+                    st.link_button("🎶 streaming", track_info.get('spotify_url', '#'), use_container_width=True)
 
 # ------------------------------------------
 # PAGE 2: 🎵 สำรวจเพลงตามอารมณ์
