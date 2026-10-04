@@ -34,9 +34,6 @@ BG_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07
 # 2. Liquid Glass Music Player Renderer
 # ==========================================
 def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
-    """
-    ฟังก์ชันสำหรับสร้าง Liquid Glass Floating Music Player ซ้อนบนหน้า Streamlit
-    """
     if not playlist:
         return
 
@@ -47,7 +44,6 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
     (function() {{
         const parentDoc = window.parent.document;
         
-        // ลบตัวเล่นเดิมออกก่อนหากมีการ Rerun
         const oldPlayer = parentDoc.getElementById('liquid-glass-player');
         if (oldPlayer) {{
             oldPlayer.remove();
@@ -57,7 +53,6 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
         let currentTrack = {start_index};
         let isPlaying = {'true' if autoplay else 'false'};
 
-        // สร้าง DOM Element ของตัวเล่นเพลง
         const player = parentDoc.createElement('div');
         player.id = 'liquid-glass-player';
         player.innerHTML = `
@@ -225,10 +220,6 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
                     transform: scale(1.08);
                 }}
 
-                .lg-btn:active {{
-                    transform: scale(0.95);
-                }}
-
                 .lg-btn-play {{
                     width: 40px;
                     height: 40px;
@@ -270,13 +261,13 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
             </div>
 
             <div class="lg-controls">
-                <button class="lg-btn" id="lg-prev-btn" title="เพลงก่อนหน้า">
+                <button class="lg-btn" id="lg-prev-btn">
                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
                 </button>
-                <button class="lg-btn lg-btn-play" id="lg-play-btn" title="เล่น/หยุด">
+                <button class="lg-btn lg-btn-play" id="lg-play-btn">
                     <svg id="lg-play-icon" width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 </button>
-                <button class="lg-btn" id="lg-next-btn" title="เพลงถัดไป">
+                <button class="lg-btn" id="lg-next-btn">
                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
                 </button>
             </div>
@@ -286,7 +277,6 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
 
         parentDoc.body.appendChild(player);
 
-        // ดึง Elements
         const audio = parentDoc.getElementById('lg-audio-element');
         const playBtn = parentDoc.getElementById('lg-play-btn');
         const playIcon = parentDoc.getElementById('lg-play-icon');
@@ -388,7 +378,6 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
             return `${{m}}:${{s < 10 ? '0' : ''}}${{s}}`;
         }}
 
-        // ระบบลากขยับตำแหน่ง (Drag & Drop)
         let isDragging = false;
         let startX, startY, initialLeft, initialTop;
 
@@ -426,7 +415,6 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
             let newLeft = initialLeft + deltaX;
             let newTop = initialTop + deltaY;
 
-            // บังคับไม่ให้ลากหลุดนอกจอ
             newLeft = Math.max(10, Math.min(window.innerWidth - player.offsetWidth - 10, newLeft));
             newTop = Math.max(10, Math.min(window.innerHeight - player.offsetHeight - 10, newTop));
 
@@ -452,7 +440,7 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
     components.html(player_code, height=0, width=0)
 
 # ==========================================
-# 3. Responsive CSS & Style
+# 3. Responsive CSS & Style (ปรับปรุงสีตัวหนังสือและพื้นหลังช่องพิมพ์)
 # ==========================================
 st.markdown(f"""
 <style>
@@ -466,7 +454,7 @@ st.markdown(f"""
     .stApp {{
         background: transparent !important;
         background-color: transparent !important;
-        color: #ffffff;
+        color: #ffffff !important;
     }}
 
     #bg-video {{
@@ -481,6 +469,61 @@ st.markdown(f"""
         pointer-events: none;
     }}
 
+    /* 📌 บังคับเปลี่ยนสี Label / หัวข้อของทุก Widget ให้เป็นสีขาวอ่านง่าย */
+    label, 
+    .stWidgetLabel, 
+    div[data-testid="stWidgetLabel"] label,
+    div[data-testid="stWidgetLabel"] p,
+    label p, 
+    label span {{
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        font-size: 0.98rem !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9) !important;
+    }}
+
+    /* 📌 แก้ไขกล่องพิมพ์ข้อความ (Textarea/Input) เป็นสีเข้มให้อ่านตัวหนังสือสีขาวได้ชัดเจน */
+    div[data-baseweb="input"] > div,
+    div[data-baseweb="textarea"] > div {{
+        background: rgba(18, 18, 22, 0.8) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.28) !important;
+        border-radius: 14px !important;
+        color: #ffffff !important;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+    }}
+
+    div[data-baseweb="input"] input,
+    div[data-baseweb="textarea"] textarea {{
+        color: #ffffff !important;
+        font-size: 1rem !important;
+    }}
+
+    div[data-baseweb="textarea"] textarea::placeholder,
+    div[data-baseweb="input"] input::placeholder {{
+        color: rgba(255, 255, 255, 0.55) !important;
+    }}
+
+    /* 📌 แก้ไขสีตัวละครใน Dropdown (Selectbox) และ Slider */
+    div[data-baseweb="select"] * {{
+        color: #ffffff !important;
+    }}
+
+    div[role="listbox"] {{
+        background-color: #1a1a20 !important;
+    }}
+
+    div[role="option"] {{
+        color: #ffffff !important;
+    }}
+
+    div[data-testid="stSlider"] * {{
+        color: #ffffff !important;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
+    }}
+
+    /* 📌 ปรับแต่งปุ่มกด */
     iframe,
     iframe[title="streamlit_mic_recorder.speech_to_text"],
     div[data-testid="stCustomComponentV1"],
@@ -516,21 +559,6 @@ st.markdown(f"""
         border: 1px solid rgba(255, 255, 255, 0.4) !important;
         font-weight: 700 !important;
         box-shadow: 0 8px 25px rgba(29, 185, 84, 0.4) !important;
-    }}
-
-    div[data-baseweb="input"] > div,
-    div[data-baseweb="textarea"] > div {{
-        background: rgba(255, 255, 255, 0.08) !important;
-        backdrop-filter: blur(14px) !important;
-        -webkit-backdrop-filter: blur(14px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 14px !important;
-        color: #ffffff !important;
-    }}
-
-    div[data-baseweb="input"] input,
-    div[data-baseweb="textarea"] textarea {{
-        color: #ffffff !important;
     }}
 
     div[data-testid="stRadio"] > div[role="radiogroup"] {{
@@ -766,11 +794,9 @@ if st.session_state.user is None:
                         res = sign_in_with_email_and_password(login_email, login_pass)
                         if res["success"]:
                             st.session_state.user = res["info"]
-                            
                             user_data = get_user_saved_data(login_email)
                             st.session_state.history = user_data.get("history", [])
                             st.session_state.favorites = user_data.get("favorites", [])
-                            
                             st.success("เข้าสู่ระบบสำเร็จ!")
                             time.sleep(0.5)
                             st.rerun()
@@ -822,7 +848,7 @@ if st.session_state.user is None:
     st.stop()
 
 # ==========================================
-# 7. Main App Content (หลังเข้าสู่ระบบแล้ว)
+# 7. Main App Content
 # ==========================================
 
 top_c1, top_c2 = st.columns([3, 1])
@@ -918,8 +944,7 @@ if nav_choice == "🎧 AI DJ Studio":
         "ความรู้สึกของคุณ:",
         value=st.session_state.user_input_text,
         placeholder="เช่น วันนี้เลิกงานแล้ว เหนื่อยมากๆ อยากหาเพลงชิลๆ ฟังผ่อนคลาย...",
-        height=90,
-        label_visibility="collapsed"
+        height=90
     )
 
     st.markdown("### ⚙️ 2. ปรับแต่งสไตล์ AI DJ")
@@ -1073,7 +1098,7 @@ elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์"
                     st.rerun()
 
 # ------------------------------------------
-# PAGE 3: 📊 สถิติ & บทวิเคราะห์ (เชื่อมต่อกับ FreqBlog API)
+# PAGE 3: 📊 สถิติ & บทวิเคราะห์
 # ------------------------------------------
 elif nav_choice == "📊 สถิติ & วิเคราะห์":
     st.subheader("📈 วิเคราะห์สถิติอารมณ์ของ Playlist (ด้วย FreqBlog API)")
@@ -1132,7 +1157,7 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
                 with f_col3:
                     st.link_button("🟢 Spotify", fav_track.get('spotify_url', '#'), use_container_width=True)
     else:
-        st.caption("ยังไม่มีเพลงโปรด กดหัวใจ ❤️ ที่การ์ดเพลงในหน้าต่างๆ เพื่อเพิ่มไว้ที่นี่และบันทึกลง Sheet ได้เลย")
+        st.caption("ยังไม่มีเพลงโปรด กดหัวใจ ❤️ ที่การ์ดเพลงในหน้าต่างๆ เพื่อเพิ่มไว้ที่นี่ได้เลย")
 
     st.divider()
     st.subheader("📜 ประวัติการใช้งานย้อนหลัง")
@@ -1149,7 +1174,7 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
         st.caption("ยังไม่มีประวัติการจัดเพลย์ลิสต์ในระบบ")
 
 # ==========================================
-# 8. Floating Liquid Glass Music Player Integration
+# 8. Floating Liquid Glass Music Player
 # ==========================================
 active_player_playlist = []
 
@@ -1185,3 +1210,35 @@ if st.session_state.current_preview_url:
     render_liquid_music_player(playlist=active_player_playlist, start_index=start_idx, autoplay=True)
 
 # ==========================================
+# 9. Google Sheets Connection Verification
+# ==========================================
+st.write("---")
+st.subheader("🔍 ระบบตรวจสอบการเชื่อมต่อ Google Sheets")
+
+url = st.secrets.get("APPS_SCRIPT_URL", "")
+st.write(f"**1. URL ใน Secrets:** `{url}`")
+
+if not url:
+    st.error("❌ ไม่พบ APPS_SCRIPT_URL ในไฟล์ secrets.toml")
+else:
+    if st.button("🧪 ทดสอบยิงข้อมูลลง Sheet จาก Streamlit"):
+        try:
+            payload = {
+                "action_type": "MOOD_LOG",
+                "user_email": "streamlit_test@gmail.com",
+                "mood_text": "ทดสอบยิงจาก Streamlit UI"
+            }
+            headers = {"User-Agent": "Mozilla/5.0"}
+            
+            response = requests.get(url, params=payload, headers=headers, timeout=10)
+            
+            st.write(f"**2. HTTP Status Code:** `{response.status_code}`")
+            st.write(f"**3. ข้อความตอบรับจาก Google:** `{response.text}`")
+            
+            if "Success" in response.text:
+                st.success("🎉 บันทึกลง Google Sheet สำเร็จแล้ว!")
+            else:
+                st.warning("⚠️ การส่งข้อมูลสำเร็จ แต่ Google ตอบกลับข้อความอื่น")
+                
+        except Exception as e:
+            st.error(f"❌ เกิดข้อผิดพลาดใน Python: {e}")
