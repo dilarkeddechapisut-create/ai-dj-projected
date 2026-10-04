@@ -1185,35 +1185,3 @@ if st.session_state.current_preview_url:
     render_liquid_music_player(playlist=active_player_playlist, start_index=start_idx, autoplay=True)
 
 # ==========================================
-# 9. Google Sheets Connection Verification
-# ==========================================
-st.write("---")
-st.subheader("🔍 ระบบตรวจสอบการเชื่อมต่อ Google Sheets")
-
-url = st.secrets.get("APPS_SCRIPT_URL", "")
-st.write(f"**1. URL ใน Secrets:** `{url}`")
-
-if not url:
-    st.error("❌ ไม่พบ APPS_SCRIPT_URL ในไฟล์ secrets.toml (กรุณาเช็กตำแหน่งไฟล์ .streamlit/secrets.toml)")
-else:
-    if st.button("🧪 ทดสอบยิงข้อมูลลง Sheet จาก Streamlit"):
-        try:
-            payload = {
-                "action_type": "MOOD_LOG",
-                "user_email": "streamlit_test@gmail.com",
-                "mood_text": "ทดสอบยิงจาก Streamlit UI"
-            }
-            headers = {"User-Agent": "Mozilla/5.0"}
-            
-            response = requests.get(url, params=payload, headers=headers, timeout=10)
-            
-            st.write(f"**2. HTTP Status Code:** `{response.status_code}`")
-            st.write(f"**3. ข้อความตอบรับจาก Google:** `{response.text}`")
-            
-            if "Success" in response.text:
-                st.success("🎉 บันทึกลง Google Sheet สำเร็จแล้ว!")
-            else:
-                st.warning("⚠️ การส่งข้อมูลสำเร็จ แต่ Google ตอบกลับข้อความอื่น")
-                
-        except Exception as e:
-            st.error(f"❌ เกิดข้อผิดพลาดใน Python: {e}")
