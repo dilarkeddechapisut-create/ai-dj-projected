@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import urllib.parse
 import re
 import requests
@@ -21,7 +21,7 @@ from auth_service import (
 )
 
 # ==========================================
-# 1. Page Configuration
+# 1. Page Configuration & Timezone Setup
 # ==========================================
 st.set_page_config(
     page_title="DJ Moody",
@@ -32,6 +32,9 @@ st.set_page_config(
 
 BG_IMAGE_URL = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2000&auto=format&fit=crop"
 BG_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_083109_283f3553-e28f-428b-a723-d639c617eb2b.mp4"
+
+# ตั้งค่า Timezone ประเทศไทย (UTC+7)
+THAILAND_TZ = timezone(timedelta(hours=7))
 
 # ==========================================
 # 2. Liquid Glass Music Player Renderer
@@ -801,6 +804,42 @@ if 'ai_taste_recommendations' not in st.session_state:
 # ==========================================
 # 5. Helper Functions
 # ==========================================
+def get_thai_now():
+    """ดึงเวลาปัจจุบันใน Timezone ประเทศไทย (UTC+7)"""
+    return datetime.now(THAILAND_TZ)
+
+def format_thai_time(time_val):
+    """แปลง ISO timestamp หรือ datetime string ให้เป็นเวลาไทย (UTC+7) รูปแบบอ่านง่าย"""
+    if not time_val:
+        return ""
+    if isinstance(time_val, datetime):
+        dt = time_val
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        dt_th = dt.astimezone(THAILAND_TZ)
+        thai_year = dt_th.year + 543
+        return f"{dt_th.strftime('%d/%m')}/{thai_year} {dt_th.strftime('%H:%M')} น."
+    
+    time_str = str(time_val).strip()
+    
+    try:
+        clean_str = time_str.replace('Z', '+00:00')
+        match = re.match(r'^(\d{4})-(.*)', clean_str)
+        if match:
+            yr = int(match.group(1))
+            if yr > 2400:
+                yr_ce = yr - 543
+                clean_str = f"{yr_ce:04d}-{match.group(2)}"
+        
+        dt = datetime.fromisoformat(clean_str)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        dt_th = dt.astimezone(THAILAND_TZ)
+        thai_year = dt_th.year + 543
+        return f"{dt_th.strftime('%d/%m')}/{thai_year} {dt_th.strftime('%H:%M')} น."
+    except Exception:
+        return time_str
+
 def clean_song_title(title):
     """ลบข้อความในวงเล็บหรืออักขระพิเศษออกจากชื่อเพลงเพื่อเพิ่มโอกาสการค้นหาเจอใน API"""
     if not title:
@@ -1162,7 +1201,7 @@ if nav_choice == "🎧 AI DJ Studio":
                     st.session_state.current_track_index = 0
                     
                     st.session_state.history.insert(0, {
-                        'time': datetime.now().strftime("%H:%M - %d/%m/%Y"),
+                        'time': get_thai_now().isoformat(),
                         'mood': mood_text,
                         'persona': dj_persona,
                         'playlist': valid_tracks,
@@ -1295,7 +1334,7 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
         key="analysis_source_radio"
     )
     
-    if analysis_source == "❤️️ เพลงในรายการโปรด":
+    if analysis_source == "❤ เพลงในรายการโปรด":
         target_playlist = st.session_state.favorites
         source_name = "รายการโปรด"
     else:
@@ -1492,7 +1531,8 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
     st.subheader("📜 ประวัติการใช้งานย้อนหลัง")
     if len(st.session_state.history) > 0:
         for item in st.session_state.history:
-            with st.expander(f"🕒 {item['time']} | {item['mood'][:40]}..."):
+            formatted_time = format_thai_time(item.get('time', ''))
+            with st.expander(f"🕒 {formatted_time} | {item['mood'][:40]}..."):
                 st.write(f"**สไตล์/คาแรกเตอร์:** {item.get('persona', '-')}")
                 st.write(f"**รายละเอียดอารมณ์:** {item.get('mood', '-')}")
                 if item.get('playlist'):
