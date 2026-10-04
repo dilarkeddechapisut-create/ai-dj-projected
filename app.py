@@ -28,6 +28,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# ลิงก์รูปภาพพื้นหลังสำรอง (วิวธรรมชาติ) และ ลิงก์วิดีโอ
+BG_IMAGE_URL = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2000&auto=format&fit=crop"
 BG_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_083109_283f3553-e28f-428b-a723-d639c617eb2b.mp4"
 
 # ==========================================
@@ -64,7 +66,7 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
                     width: 330px;
                     padding: 16px 18px;
                     border-radius: 22px;
-                    background: rgba(18, 22, 34, 0.75);
+                    background: rgba(18, 22, 34, 0.85);
                     backdrop-filter: blur(20px) saturate(180%);
                     -webkit-backdrop-filter: blur(20px) saturate(180%);
                     border: 1px solid rgba(255, 255, 255, 0.22);
@@ -440,16 +442,31 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
     components.html(player_code, height=0, width=0)
 
 # ==========================================
-# 3. Responsive Custom CSS (ปรับปรุงการมองเห็นตัวอักษรทั้งหมด)
+# 3. Responsive Custom CSS (แก้ไขระบบพื้นหลัง & การมองเห็นตัวอักษร)
 # ==========================================
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
+    /* 📌 กำหนดรูปภาพพื้นหลังหลัก + Overlay ซ้อนดำเพื่อความสมบูรณ์ */
     html, body, [data-testid="stAppViewContainer"] {{
-        background-color: #121212 !important;
+        background: url('{BG_IMAGE_URL}') no-repeat center center fixed !important;
+        background-size: cover !important;
         font-family: 'Prompt', sans-serif !important;
         color: #ffffff !important;
+    }}
+
+    /* แผ่น Overlay สีมืดแบบบาง เพื่อให้ข้อความสว่างชัดเจนเหนือพื้นหลัง */
+    [data-testid="stAppViewContainer"]::before {{
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(10, 15, 20, 0.45);
+        z-index: -9998;
+        pointer-events: none;
     }}
 
     .stApp {{
@@ -457,34 +474,34 @@ st.markdown(f"""
         color: #ffffff !important;
     }}
 
-    /* วิดีโอพื้นหลัง */
+    /* วิดีโอพื้นหลัง (ถ้าเลเยอร์วิดีโอเล่นได้ จะซ้อนทับภาพนิ่งขึ้นมา) */
     #bg-video {{
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        z-index: -9999;
+        z-index: -9997;
         object-fit: cover;
-        filter: brightness(0.35);
+        filter: brightness(0.4);
         pointer-events: none;
     }}
 
-    /* 📌 ข้อความ หัวข้อ และเนื้อหาทั้งหมดบนหน้าจอให้เป็นสีขาวชัดเจน */
+    /* ข้อความ หัวข้อ และเนื้อหาทั้งหมด */
     h1, h2, h3, h4, h5, h6, p, span, div, label {{
         color: #ffffff !important;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.85);
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
     }}
 
-    /* 📌 การ์ดสถิติ st.metric (จำนวนเพลงทั้งหมด, สถานะ API) */
+    /* การ์ดสถิติ st.metric */
     div[data-testid="stMetric"] {{
-        background: rgba(18, 18, 24, 0.8) !important;
+        background: rgba(18, 18, 24, 0.82) !important;
         backdrop-filter: blur(14px) !important;
         -webkit-backdrop-filter: blur(14px) !important;
         border: 1px solid rgba(255, 255, 255, 0.22) !important;
         border-radius: 16px !important;
         padding: 14px 18px !important;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.5) !important;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.6) !important;
     }}
 
     div[data-testid="stMetricLabel"] p {{
@@ -494,13 +511,13 @@ st.markdown(f"""
     }}
 
     div[data-testid="stMetricValue"] div {{
-        color: #1DB954 !important; /* เปลี่ยนตัวเลขเป็นสีเขียว Spotify สว่าง */
+        color: #1DB954 !important;
         font-size: 1.8rem !important;
         font-weight: 700 !important;
         text-shadow: 0 0 12px rgba(29, 185, 84, 0.6) !important;
     }}
 
-    /* 📌 บังคับเปลี่ยนสี Label / หัวข้อของทุก Widget */
+    /* Label / หัวข้อของทุก Widget */
     label, 
     .stWidgetLabel, 
     div[data-testid="stWidgetLabel"] label,
@@ -510,16 +527,16 @@ st.markdown(f"""
         color: #ffffff !important;
         font-weight: 600 !important;
         font-size: 1rem !important;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9) !important;
+        text-shadow: 0 2px 5px rgba(0, 0, 0, 0.95) !important;
     }}
 
-    /* 📌 แก้ไขกล่องพิมพ์ข้อความ (Textarea & Text Input) */
+    /* กล่องพิมพ์ข้อความ (Textarea & Text Input) */
     div[data-baseweb="input"],
     div[data-baseweb="textarea"] {{
         background: rgba(18, 18, 22, 0.88) !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.35) !important;
         border-radius: 14px !important;
         box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6) !important;
     }}
@@ -537,15 +554,14 @@ st.markdown(f"""
         background: transparent !important;
     }}
 
-    /* สีตัวหนังสือ Placeholder ในช่องพิมพ์ */
     div[data-baseweb="textarea"] textarea::placeholder,
     div[data-baseweb="input"] input::placeholder {{
-        color: rgba(255, 255, 255, 0.55) !important;
+        color: rgba(255, 255, 255, 0.65) !important;
     }}
 
-    /* 📌 Selectbox / Dropdown & Slider */
+    /* Selectbox / Dropdown & Slider */
     div[data-baseweb="select"] > div {{
-        background: rgba(18, 18, 22, 0.85) !important;
+        background: rgba(18, 18, 22, 0.88) !important;
         border: 1px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 12px !important;
         color: #ffffff !important;
@@ -569,7 +585,7 @@ st.markdown(f"""
         text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
     }}
 
-    /* 📌 ปุ่มกดกด (Button) */
+    /* ปุ่มกด */
     iframe,
     iframe[title="streamlit_mic_recorder.speech_to_text"],
     div[data-testid="stCustomComponentV1"],
@@ -580,10 +596,10 @@ st.markdown(f"""
     }}
 
     div.stButton > button {{
-        background: rgba(255, 255, 255, 0.12) !important;
+        background: rgba(255, 255, 255, 0.15) !important;
         backdrop-filter: blur(16px) saturate(180%) !important;
         -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-        border: 1px solid rgba(255, 255, 255, 0.28) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 14px !important;
         color: #ffffff !important;
         font-weight: 500 !important;
@@ -593,7 +609,7 @@ st.markdown(f"""
     }}
 
     div.stButton > button:hover {{
-        background: rgba(255, 255, 255, 0.28) !important;
+        background: rgba(255, 255, 255, 0.3) !important;
         border-color: rgba(255, 255, 255, 0.6) !important;
         box-shadow: 0 10px 35px 0 rgba(29, 185, 84, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
         transform: translateY(-2px);
@@ -601,35 +617,35 @@ st.markdown(f"""
     }}
 
     div.stButton > button[kind="primary"] {{
-        background: linear-gradient(135deg, rgba(29, 185, 84, 0.88), rgba(20, 140, 60, 0.95)) !important;
+        background: linear-gradient(135deg, rgba(29, 185, 84, 0.9), rgba(20, 140, 60, 0.95)) !important;
         border: 1px solid rgba(255, 255, 255, 0.4) !important;
         font-weight: 700 !important;
         box-shadow: 0 8px 25px rgba(29, 185, 84, 0.45) !important;
     }}
 
-    /* 📌 Radio Navigation Bar */
+    /* Radio Navigation Bar */
     div[data-testid="stRadio"] > div[role="radiogroup"] {{
         display: flex !important;
         flex-direction: row !important;
         justify-content: center !important;
         align-items: center !important;
         gap: 10px !important;
-        background: rgba(18, 18, 22, 0.75);
+        background: rgba(18, 18, 22, 0.8);
         backdrop-filter: blur(16px);
         padding: 8px 16px;
         border-radius: 30px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.25);
         width: fit-content;
         margin: 0 auto;
     }}
 
     div[data-testid="stRadio"] label {{
-        background: rgba(255, 255, 255, 0.1) !important;
+        background: rgba(255, 255, 255, 0.12) !important;
         color: #ffffff !important;
         border-radius: 20px !important;
         padding: 8px 18px !important;
         font-weight: 500 !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
     }}
 
     div[data-testid="stRadio"] label[data-checked="true"] {{
@@ -642,11 +658,11 @@ st.markdown(f"""
         display: none !important;
     }}
 
-    /* 📌 Spotify Card Component */
+    /* Spotify Card Component */
     .spotify-card {{
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(18, 18, 24, 0.75);
         backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.22);
         border-radius: 16px;
         padding: 14px;
         margin-bottom: 12px;
@@ -690,7 +706,7 @@ st.markdown(f"""
 
     .spotify-tag {{
         display: inline-block;
-        background: rgba(29, 185, 84, 0.3);
+        background: rgba(29, 185, 84, 0.35);
         color: #1DB954;
         font-size: 0.72rem;
         font-weight: 600;
@@ -709,15 +725,15 @@ st.markdown(f"""
         font-size: 2.2rem;
         font-weight: 800;
         color: #1DB954;
-        text-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+        text-shadow: 0 4px 15px rgba(0, 0, 0, 0.9);
     }}
 
     .user-badge {{
-        background: rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(10px);
         padding: 6px 16px;
         border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.28);
         font-size: 0.88rem;
         display: inline-flex;
         align-items: center;
@@ -725,10 +741,10 @@ st.markdown(f"""
         color: #ffffff;
     }}
 
-    /* 📌 Expander */
+    /* Expander */
     div[data-testid="stExpander"] {{
-        background: rgba(18, 18, 22, 0.75) !important;
-        border: 1px solid rgba(255, 255, 255, 0.22) !important;
+        background: rgba(18, 18, 22, 0.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
         border-radius: 12px !important;
     }}
     div[data-testid="stExpander"] details summary span {{
