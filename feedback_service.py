@@ -68,3 +68,24 @@ def save_feedback(user_email, mood_text, song_name="", artist="", is_liked=True)
         return False
 
 save_favorite_song = save_feedback
+
+
+def get_user_saved_data(user_email):
+    """ ดึงประวัติการใช้งานและเพลงโปรดของ User จาก Google Sheets """
+    apps_script_url = st.secrets.get("APPS_SCRIPT_URL", "")
+
+    if not apps_script_url or not user_email:
+        return {"history": [], "favorites": []}
+
+    try:
+        response = requests.get(
+            apps_script_url,
+            params={"user_email": user_email},
+            timeout=5
+        )
+        if response.status_code == 200:
+            return response.json()
+    except Exception as e:
+        print(f"API Error (get_user_saved_data): {e}")
+
+    return {"history": [], "favorites": []}
