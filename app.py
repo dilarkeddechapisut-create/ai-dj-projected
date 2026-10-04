@@ -737,3 +737,40 @@ if st.session_state.current_preview_url:
                 st.rerun()
 
         st.audio(st.session_state.current_preview_url, format="audio/mp3", autoplay=True)
+
+        import streamlit as st
+import requests
+
+st.write("---")
+st.subheader("🔍 ระบบตรวจสอบการเชื่อมต่อ Google Sheets")
+
+# 1. เช็กว่าอ่าน URL จาก Secrets ได้ไหม
+url = st.secrets.get("APPS_SCRIPT_URL", "")
+st.write(f"**1. URL ใน Secrets:** `{url}`")
+
+if not url:
+    st.error("❌ ไม่พบ APPS_SCRIPT_URL ในไฟล์ secrets.toml (กรุณาเช็กตำแหน่งไฟล์ .streamlit/secrets.toml)")
+else:
+    # 2. ปุ่มกดทดสอบยิงข้อมูลจาก Streamlit
+    if st.button("🧪 ทดสอบยิงข้อมูลลง Sheet จาก Streamlit"):
+        try:
+            payload = {
+                "action_type": "MOOD_LOG",
+                "user_email": "streamlit_test@gmail.com",
+                "mood_text": "ทดสอบยิงจาก Streamlit UI"
+            }
+            # ใส่ Header ป้องกัน Google บล็อก Python Request
+            headers = {"User-Agent": "Mozilla/5.0"}
+            
+            response = requests.get(url, params=payload, headers=headers, timeout=10)
+            
+            st.write(f"**2. HTTP Status Code:** `{response.status_code}`")
+            st.write(f"**3. ข้อความตอบรับจาก Google:** `{response.text}`")
+            
+            if "Success" in response.text:
+                st.success("🎉 บันทึกลง Google Sheet สำเร็จแล้ว!")
+            else:
+                st.warning("⚠️ การส่งข้อมูลสำเร็จ แต่ Google ตอบกลับข้อความอื่น")
+                
+        except Exception as e:
+            st.error(f"❌ เกิดข้อผิดพลาดใน Python: {e}")
