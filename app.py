@@ -64,11 +64,11 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
                     width: 330px;
                     padding: 16px 18px;
                     border-radius: 22px;
-                    background: rgba(18, 22, 34, 0.65);
+                    background: rgba(18, 22, 34, 0.75);
                     backdrop-filter: blur(20px) saturate(180%);
                     -webkit-backdrop-filter: blur(20px) saturate(180%);
                     border: 1px solid rgba(255, 255, 255, 0.22);
-                    box-shadow: 0 12px 35px 0 rgba(0, 0, 0, 0.45),
+                    box-shadow: 0 12px 35px 0 rgba(0, 0, 0, 0.5),
                                 inset 0 1px 1px 0 rgba(255, 255, 255, 0.3);
                     z-index: 999999;
                     font-family: -apple-system, BlinkMacSystemFont, "Prompt", "Segoe UI", Roboto, sans-serif;
@@ -78,7 +78,7 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
                 }}
 
                 #liquid-glass-player:hover {{
-                    box-shadow: 0 16px 45px 0 rgba(0, 0, 0, 0.6),
+                    box-shadow: 0 16px 45px 0 rgba(0, 0, 0, 0.7),
                                 inset 0 1px 2px 0 rgba(255, 255, 255, 0.4);
                 }}
 
@@ -89,7 +89,7 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
                     cursor: grab;
                     padding-bottom: 8px;
                     margin-bottom: 10px;
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
                 }}
 
                 .lg-drag-header:active {{
@@ -156,7 +156,7 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
 
                 .lg-artist {{
                     font-size: 11px;
-                    color: rgba(255, 255, 255, 0.65);
+                    color: rgba(255, 255, 255, 0.75);
                     margin-top: 2px;
                     white-space: nowrap;
                     overflow: hidden;
@@ -172,14 +172,14 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
 
                 .lg-time {{
                     font-size: 10px;
-                    color: rgba(255, 255, 255, 0.6);
+                    color: rgba(255, 255, 255, 0.7);
                     font-variant-numeric: tabular-nums;
                 }}
 
                 .lg-progress-bar {{
                     flex: 1;
                     height: 5px;
-                    background: rgba(255, 255, 255, 0.18);
+                    background: rgba(255, 255, 255, 0.22);
                     border-radius: 10px;
                     overflow: hidden;
                     cursor: pointer;
@@ -202,8 +202,8 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
                 }}
 
                 .lg-btn {{
-                    background: rgba(255, 255, 255, 0.1);
-                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    background: rgba(255, 255, 255, 0.12);
+                    border: 1px solid rgba(255, 255, 255, 0.25);
                     color: white;
                     border-radius: 50%;
                     width: 34px;
@@ -216,7 +216,7 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
                 }}
 
                 .lg-btn:hover {{
-                    background: rgba(255, 255, 255, 0.25);
+                    background: rgba(255, 255, 255, 0.3);
                     transform: scale(1.08);
                 }}
 
@@ -225,7 +225,7 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
                     height: 40px;
                     background: #1DB954;
                     border: 1px solid rgba(255, 255, 255, 0.4);
-                    box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4);
+                    box-shadow: 0 4px 15px rgba(29, 185, 84, 0.5);
                 }}
 
                 .lg-btn-play:hover {{
@@ -440,23 +440,24 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
     components.html(player_code, height=0, width=0)
 
 # ==========================================
-# 3. Responsive CSS & Style (ปรับปรุงสีตัวหนังสือและพื้นหลังช่องพิมพ์)
+# 3. Responsive Custom CSS (ปรับปรุงการมองเห็นตัวอักษรทั้งหมด)
 # ==========================================
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
-    html, body {{
+    html, body, [data-testid="stAppViewContainer"] {{
         background-color: #121212 !important;
-        font-family: 'Prompt', sans-serif;
+        font-family: 'Prompt', sans-serif !important;
+        color: #ffffff !important;
     }}
 
     .stApp {{
         background: transparent !important;
-        background-color: transparent !important;
         color: #ffffff !important;
     }}
 
+    /* วิดีโอพื้นหลัง */
     #bg-video {{
         position: fixed;
         top: 0;
@@ -469,7 +470,37 @@ st.markdown(f"""
         pointer-events: none;
     }}
 
-    /* 📌 บังคับเปลี่ยนสี Label / หัวข้อของทุก Widget ให้เป็นสีขาวอ่านง่าย */
+    /* 📌 ข้อความ หัวข้อ และเนื้อหาทั้งหมดบนหน้าจอให้เป็นสีขาวชัดเจน */
+    h1, h2, h3, h4, h5, h6, p, span, div, label {{
+        color: #ffffff !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.85);
+    }}
+
+    /* 📌 การ์ดสถิติ st.metric (จำนวนเพลงทั้งหมด, สถานะ API) */
+    div[data-testid="stMetric"] {{
+        background: rgba(18, 18, 24, 0.8) !important;
+        backdrop-filter: blur(14px) !important;
+        -webkit-backdrop-filter: blur(14px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.22) !important;
+        border-radius: 16px !important;
+        padding: 14px 18px !important;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5) !important;
+    }}
+
+    div[data-testid="stMetricLabel"] p {{
+        color: rgba(255, 255, 255, 0.9) !important;
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+    }}
+
+    div[data-testid="stMetricValue"] div {{
+        color: #1DB954 !important; /* เปลี่ยนตัวเลขเป็นสีเขียว Spotify สว่าง */
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+        text-shadow: 0 0 12px rgba(29, 185, 84, 0.6) !important;
+    }}
+
+    /* 📌 บังคับเปลี่ยนสี Label / หัวข้อของทุก Widget */
     label, 
     .stWidgetLabel, 
     div[data-testid="stWidgetLabel"] label,
@@ -478,40 +509,55 @@ st.markdown(f"""
     label span {{
         color: #ffffff !important;
         font-weight: 600 !important;
-        font-size: 0.98rem !important;
+        font-size: 1rem !important;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9) !important;
     }}
 
-    /* 📌 แก้ไขกล่องพิมพ์ข้อความ (Textarea/Input) เป็นสีเข้มให้อ่านตัวหนังสือสีขาวได้ชัดเจน */
-    div[data-baseweb="input"] > div,
-    div[data-baseweb="textarea"] > div {{
-        background: rgba(18, 18, 22, 0.8) !important;
+    /* 📌 แก้ไขกล่องพิมพ์ข้อความ (Textarea & Text Input) */
+    div[data-baseweb="input"],
+    div[data-baseweb="textarea"] {{
+        background: rgba(18, 18, 22, 0.88) !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.28) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 14px !important;
-        color: #ffffff !important;
-        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6) !important;
+    }}
+
+    div[data-baseweb="input"] > div,
+    div[data-baseweb="textarea"] > div {{
+        background: transparent !important;
     }}
 
     div[data-baseweb="input"] input,
     div[data-baseweb="textarea"] textarea {{
         color: #ffffff !important;
-        font-size: 1rem !important;
+        font-size: 1.05rem !important;
+        font-family: 'Prompt', sans-serif !important;
+        background: transparent !important;
     }}
 
+    /* สีตัวหนังสือ Placeholder ในช่องพิมพ์ */
     div[data-baseweb="textarea"] textarea::placeholder,
     div[data-baseweb="input"] input::placeholder {{
         color: rgba(255, 255, 255, 0.55) !important;
     }}
 
-    /* 📌 แก้ไขสีตัวละครใน Dropdown (Selectbox) และ Slider */
+    /* 📌 Selectbox / Dropdown & Slider */
+    div[data-baseweb="select"] > div {{
+        background: rgba(18, 18, 22, 0.85) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 12px !important;
+        color: #ffffff !important;
+    }}
+
     div[data-baseweb="select"] * {{
         color: #ffffff !important;
     }}
 
     div[role="listbox"] {{
-        background-color: #1a1a20 !important;
+        background-color: #1e1e24 !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
     }}
 
     div[role="option"] {{
@@ -523,7 +569,7 @@ st.markdown(f"""
         text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
     }}
 
-    /* 📌 ปรับแต่งปุ่มกด */
+    /* 📌 ปุ่มกดกด (Button) */
     iframe,
     iframe[title="streamlit_mic_recorder.speech_to_text"],
     div[data-testid="stCustomComponentV1"],
@@ -537,7 +583,7 @@ st.markdown(f"""
         background: rgba(255, 255, 255, 0.12) !important;
         backdrop-filter: blur(16px) saturate(180%) !important;
         -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        border: 1px solid rgba(255, 255, 255, 0.28) !important;
         border-radius: 14px !important;
         color: #ffffff !important;
         font-weight: 500 !important;
@@ -548,41 +594,42 @@ st.markdown(f"""
 
     div.stButton > button:hover {{
         background: rgba(255, 255, 255, 0.28) !important;
-        border-color: rgba(255, 255, 255, 0.55) !important;
-        box-shadow: 0 10px 35px 0 rgba(29, 185, 84, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+        border-color: rgba(255, 255, 255, 0.6) !important;
+        box-shadow: 0 10px 35px 0 rgba(29, 185, 84, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
         transform: translateY(-2px);
         color: #ffffff !important;
     }}
 
     div.stButton > button[kind="primary"] {{
-        background: linear-gradient(135deg, rgba(29, 185, 84, 0.85), rgba(20, 140, 60, 0.95)) !important;
+        background: linear-gradient(135deg, rgba(29, 185, 84, 0.88), rgba(20, 140, 60, 0.95)) !important;
         border: 1px solid rgba(255, 255, 255, 0.4) !important;
         font-weight: 700 !important;
-        box-shadow: 0 8px 25px rgba(29, 185, 84, 0.4) !important;
+        box-shadow: 0 8px 25px rgba(29, 185, 84, 0.45) !important;
     }}
 
+    /* 📌 Radio Navigation Bar */
     div[data-testid="stRadio"] > div[role="radiogroup"] {{
         display: flex !important;
         flex-direction: row !important;
         justify-content: center !important;
         align-items: center !important;
         gap: 10px !important;
-        background: rgba(18, 18, 18, 0.65);
+        background: rgba(18, 18, 22, 0.75);
         backdrop-filter: blur(16px);
         padding: 8px 16px;
         border-radius: 30px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         width: fit-content;
         margin: 0 auto;
     }}
 
     div[data-testid="stRadio"] label {{
-        background: rgba(255, 255, 255, 0.08) !important;
+        background: rgba(255, 255, 255, 0.1) !important;
         color: #ffffff !important;
         border-radius: 20px !important;
         padding: 8px 18px !important;
         font-weight: 500 !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
     }}
 
     div[data-testid="stRadio"] label[data-checked="true"] {{
@@ -595,10 +642,11 @@ st.markdown(f"""
         display: none !important;
     }}
 
+    /* 📌 Spotify Card Component */
     .spotify-card {{
-        background: rgba(255, 255, 255, 0.07);
+        background: rgba(255, 255, 255, 0.08);
         backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 16px;
         padding: 14px;
         margin-bottom: 12px;
@@ -634,7 +682,7 @@ st.markdown(f"""
 
     .spotify-card-subtitle {{
         font-size: 0.82rem;
-        color: #b3b3b3;
+        color: #cccccc;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -642,7 +690,7 @@ st.markdown(f"""
 
     .spotify-tag {{
         display: inline-block;
-        background: rgba(29, 185, 84, 0.25);
+        background: rgba(29, 185, 84, 0.3);
         color: #1DB954;
         font-size: 0.72rem;
         font-weight: 600;
@@ -661,19 +709,30 @@ st.markdown(f"""
         font-size: 2.2rem;
         font-weight: 800;
         color: #1DB954;
-        text-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+        text-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
     }}
 
     .user-badge {{
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.12);
         backdrop-filter: blur(10px);
         padding: 6px 16px;
         border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.25);
         font-size: 0.88rem;
         display: inline-flex;
         align-items: center;
         gap: 8px;
+        color: #ffffff;
+    }}
+
+    /* 📌 Expander */
+    div[data-testid="stExpander"] {{
+        background: rgba(18, 18, 22, 0.75) !important;
+        border: 1px solid rgba(255, 255, 255, 0.22) !important;
+        border-radius: 12px !important;
+    }}
+    div[data-testid="stExpander"] details summary span {{
+        color: #ffffff !important;
     }}
 </style>
 
@@ -774,7 +833,7 @@ if st.session_state.user is None:
     st.markdown("""
     <div class="main-header">
         <h1>🎧 DJ Moody</h1>
-        <p style="color: #bbb;">กรุณาเข้าสู่ระบบก่อนเริ่มใช้งานเพื่อบันทึกประวัติส่วนตัว</p>
+        <p style="color: #ddd;">กรุณาเข้าสู่ระบบก่อนเริ่มใช้งานเพื่อบันทึกประวัติส่วนตัว</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -944,7 +1003,7 @@ if nav_choice == "🎧 AI DJ Studio":
         "ความรู้สึกของคุณ:",
         value=st.session_state.user_input_text,
         placeholder="เช่น วันนี้เลิกงานแล้ว เหนื่อยมากๆ อยากหาเพลงชิลๆ ฟังผ่อนคลาย...",
-        height=90
+        height=95
     )
 
     st.markdown("### ⚙️ 2. ปรับแต่งสไตล์ AI DJ")
@@ -1023,7 +1082,7 @@ if nav_choice == "🎧 AI DJ Studio":
                     </div>
                     <div class="spotify-card-title">{track_info['name']}</div>
                     <div class="spotify-card-subtitle">{track_info['artist']}</div>
-                    <div style="font-size:0.8rem; color:#aaa; font-style:italic;">{track_info.get('reason', '')[:60]}...</div>
+                    <div style="font-size:0.8rem; color:#bbb; font-style:italic;">{track_info.get('reason', '')[:60]}...</div>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -1236,7 +1295,7 @@ else:
             st.write(f"**3. ข้อความตอบรับจาก Google:** `{response.text}`")
             
             if "Success" in response.text:
-                st.success("🎉 บันทึกลง Google Sheet สำเร็จแล้ว!")
+                st.success("🎉 บันทึกลลง Google Sheet สำเร็จแล้ว!")
             else:
                 st.warning("⚠️ การส่งข้อมูลสำเร็จ แต่ Google ตอบกลับข้อความอื่น")
                 
