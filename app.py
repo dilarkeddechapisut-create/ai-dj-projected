@@ -452,32 +452,34 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
     components.html(player_code, height=0, width=0)
 
 # ==========================================
-# 3. Responsive CSS & Style
+# 3. Responsive CSS & Style (FIXED BG VIDEO)
 # ==========================================
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
-    html, body, [class*="css"] {{
+    html, body {{
+        background-color: #121212 !important;
         font-family: 'Prompt', sans-serif;
     }}
 
+    /* แก้ไขโปร่งใสของ stApp เพื่อให้วิดีโอพื้นหลังแสดงผล */
     .stApp {{
-        background-color: #121212 !important;
+        background: transparent !important;
+        background-color: transparent !important;
         color: #ffffff;
     }}
 
     #bg-video {{
         position: fixed;
-        right: 0;
-        bottom: 0;
-        min-width: 100%;
-        min-height: 100%;
-        width: auto;
-        height: auto;
-        z-index: -100;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -9999;
         object-fit: cover;
         filter: brightness(0.35);
+        pointer-events: none;
     }}
 
     iframe,
@@ -1160,7 +1162,7 @@ if st.session_state.playlist:
 # กรณีที่ผู้ใช้กดเล่นเพลงเฉพาะเพลงใดเพลงหนึ่ง
 if st.session_state.current_preview_url:
     start_idx = 0
-    # ค้นหาว่าเพลงที่เลือ่อยู่ตรงกับดัชนีใดใน playlist
+    # ค้นหาว่าเพลงที่เลือกตรงกับดัชนีใดใน playlist
     found = False
     for idx, track_item in enumerate(active_player_playlist):
         if track_item['url'] == st.session_state.current_preview_url:
