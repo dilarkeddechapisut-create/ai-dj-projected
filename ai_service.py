@@ -1,51 +1,37 @@
-import requests
-import urllib.parse
+import google.generativeai as genai
+import json
+import streamlit as st
 
-def get_album_cover(song_title: str, artist: str = "") -> str:
-    """ดึง URL รูปปกเพลงจริงจาก iTunes API อัตโนมัติ"""
-    try:
-        query = f"{song_title} {artist}".strip()
-        encoded_query = urllib.parse.quote(query)
-        url = f"https://itunes.apple.com/search?term={encoded_query}&entity=song&limit=1"
-        
-        response = requests.get(url, timeout=5)
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("resultCount", 0) > 0:
-                artwork_url = data["results"][0].get("artworkUrl100", "")
-                # ขยายขนาดรูปปกเป็น 600x600 px
-                return artwork_url.replace("100x100bb", "600x600bb")
-    except Exception as e:
-        print(f"Error fetching cover image: {e}")
+def get_playlist_from_ai(mood_text, num_songs):
+    """วิเคราะห์ความรู้สึกและสร้าง Playlist คืนค่าเป็น JSON"""
+    api_key = st.secrets.get("GEMINI_API_KEY", "")
+    if not api_key:
+        st.error("กรุณาตั้งค่า GEMINI_API_KEY ใน Secrets")
+        return None
+
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-3.5-flash')
+
+    prompt = f"""
+    ผู้ใช้มีความรู้สึกดังนี้: "{mood_text}"
+    กรุณาทำหน้าที่เป็น AI DJ ผู้เห็นอกเห็นใจ
+    1. ให้คำพูดให้กำลังใจ/เข้าอกเข้าใจผู้ใช้ภาพรวมสั้นๆ 1 ย่อหน้า
+    2. แนะนำเพลงจำนวน {num_songs} เพลง ที่เข้ากับอารมณ์นี้ (เน้นเพลงดังที่มีใน Spotify)
     
-    # รูปสำรองกรณีหาไม่พบ
-    return "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop"
-
-def get_playlist_from_ai(prompt: str):
-    """
-    ฟังก์ชันส่งคืนรายการเพลงพร้อมรูปปก
-    """
-    try:
-        # TODO: ส่วนนี้เชื่อมต่อกับ AI API (เช่น OpenAI/Gemini) ตามที่คุณต้องการ
-        # ตัวอย่างเพลงที่ดึงมาใช้งาน:
-        raw_songs = [
-            {"title": "Weightless", "artist": "Marconi Union"},
-            {"title": "Cornfield Chase", "artist": "Hans Zimmer"},
-            {"title": "ถ้าเธอต้องเลือก", "artist": "ILLSLICK"}
+    ส่งคำตอบกลับมาในรูปแบบ JSON เท่านั้น โครงสร้างดังนี้:
+    {{
+        "encouragement": "คำพูดให้กำลังใจ...",
+        "songs": [
+            {{"title": "ชื่อเพลง", "artist": "ชื่อศิลปิน", "reason": "เหตุผลที่เลือกเพลงนี้ให้ (1 ประโยค)"}}
         ]
-        
-        playlist = []
-        for song in raw_songs:
-            # ดึงรูปปกเพลงของแต่ละเพลง
-            cover_url = get_album_cover(song["title"], song.get("artist", ""))
-            playlist.append({
-                "title": song["title"],
-                "artist": song["artist"],
-                "cover_url": cover_url
-            })
-        
-        return playlist
-
+    }}
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        json_str = response.text.replace('```json', '').replace('```', '').strip()
+        data = json.loads(json_str)
+        return data
     except Exception as e:
-        print(f"Error in ai_service: {e}")
-        return []
+        st.error(f"เกิดข้อผิดพลาดในการวิเคราะห์ AI: {e}")
+        return None
