@@ -1226,7 +1226,7 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
                         st.rerun()
 
                 with f_col3:
-                    st.link_button("🟢 Spotify", fav_track.get('spotify_url', '#'), use_container_width=True)
+                    st.link_button("🎶 streaming", fav_track.get('spotify_url', '#'), use_container_width=True)
     else:
         st.caption("ยังไม่มีเพลงโปรด กดหัวใจ ❤️ ที่การ์ดเพลงในหน้าต่างๆ เพื่อเพิ่มไว้ที่นี่ได้เลย")
 
