@@ -2,8 +2,7 @@ import requests
 import streamlit as st
 
 def save_feedback(mood_text, is_liked=True, song_name="", artist=""):
-    """ส่งข้อมูลประวัติการกดถูกใจเพลงไปยัง Google Sheets อย่างปลอดภัย"""
-    # ดึง URL จาก secrets แบบปลอดภัย (หากยังไม่ตั้งค่าจะไม่ทำให้แอปพัง)
+    """ส่งข้อมูลประวัติการกดถูกใจเพลงไปยัง Google Sheets แบบแยกคอลัมน์อย่างปลอดภัย"""
     apps_script_url = st.secrets.get("APPS_SCRIPT_URL", "")
 
     if not apps_script_url:
@@ -31,5 +30,5 @@ def save_feedback(mood_text, is_liked=True, song_name="", artist=""):
         print(f"API Error: {e}")
         return False
 
-# ตั้ง Alias รองรับการเรียกทั้งสองชื่อเพื่อกัน Error
+# ตั้งค่า Alias รองรับชื่อฟังก์ชันเดิม
 save_favorite_song = save_feedback
