@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import urllib.parse
 import re
 import requests
@@ -19,6 +19,9 @@ from auth_service import (
     sign_up_with_email_and_password, 
     reset_password
 )
+
+# กำหนดเวลามาตรฐานประเทศไทย (UTC+7)
+THAILAND_TZ = timezone(timedelta(hours=7))
 
 # ==========================================
 # 1. Page Configuration
@@ -1161,8 +1164,9 @@ if nav_choice == "🎧 AI DJ Studio":
                     st.session_state.playlist = valid_tracks
                     st.session_state.current_track_index = 0
                     
+                    # บันทึกเวลาด้วย Thailand Timezone (UTC+7) ให้ตรงกับ Google Sheets
                     st.session_state.history.insert(0, {
-                        'time': datetime.now().strftime("%H:%M - %d/%m/%Y"),
+                        'time': datetime.now(THAILAND_TZ).strftime("%H:%M - %d/%m/%Y"),
                         'mood': mood_text,
                         'persona': dj_persona,
                         'playlist': valid_tracks,
@@ -1295,7 +1299,7 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
         key="analysis_source_radio"
     )
     
-    if analysis_source == "❤️️ เพลงในรายการโปรด":
+    if analysis_source == "❤ เพลงในรายการโปรด":
         target_playlist = st.session_state.favorites
         source_name = "รายการโปรด"
     else:
