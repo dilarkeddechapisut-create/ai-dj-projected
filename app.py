@@ -7,7 +7,7 @@ from streamlit_mic_recorder import speech_to_text
 from ai_service import get_playlist_from_ai
 from spotify_service import search_spotify_track
 from stats_service import create_radar_chart
-from feedback_service import save_feedback
+from feedback_service import save_feedback, save_mood_history
 from preview_service import get_track_preview
 from auth_service import (
     sign_in_with_email_and_password, 
@@ -211,18 +211,6 @@ st.markdown(f"""
         text-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
     }}
 
-    .auth-container {{
-        max-width: 420px;
-        margin: 40px auto;
-        padding: 30px;
-        background: rgba(18, 18, 18, 0.75);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 20px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.6);
-    }}
-
     .user-badge {{
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
@@ -297,17 +285,25 @@ def fetch_live_track_info(title, artist, tag):
 
 def handle_like_song(track, mood_prompt=""):
     is_fav = any(f['name'] == track['name'] for f in st.session_state.favorites)
-    user_email = st.session_state.user.get('email', '') if st.session_state.user else ''
+    user_email = st.session_state.user.get('email', 'Anonymous') if st.session_state.user else 'Anonymous'
     
     if is_fav:
         st.session_state.favorites = [f for f in st.session_state.favorites if f['name'] != track['name']]
-        st.toast(f"ลบ {track['name']} ออกจากรายการโปรดแล้ว", icon="🗑️")
+        save_feedback(
+            user_email=user_email,
+            mood_text=mood_prompt or st.session_state.user_input_text or "ยกเลิกถูกใจ",
+            song_name=track['name'],
+            artist=track.get('artist', ''),
+            is_liked=False
+        )
+        st.toast(f"ลบ {track['name']} ออกจากรายการโปรดแล้ว", icon="🗑️️")
     else:
         st.session_state.favorites.append(track)
         try:
             current_mood = mood_prompt or st.session_state.user_input_text or "กดถูกใจจากรายการแนะนำ"
             save_feedback(
-                mood_text=f"[{user_email}] {current_mood}" if user_email else current_mood,
+                user_email=user_email,
+                mood_text=current_mood,
                 song_name=track['name'],
                 artist=track.get('artist', ''),
                 is_liked=True
@@ -317,13 +313,13 @@ def handle_like_song(track, mood_prompt=""):
             st.toast(f"เพิ่ม {track['name']} ในเพลงโปรดแล้ว", icon="❤️")
 
 # ==========================================
-# 5. Firebase Authentication View (หน้าเข้าสู่ระบบ)
+# 5. Firebase Authentication View
 # ==========================================
 if st.session_state.user is None:
     st.markdown("""
     <div class="main-header">
         <h1>🎧 AI DJ Mood Matcher Pro</h1>
-        <p style="color: #bbb;">กรุณาเข้าสู่ระบบด้วย Firebase ก่อนเริ่มใช้งาน</p>
+        <p style="color: #bbb;">กรุณาเข้าสู่ระบบก่อนเริ่มใช้งานเพื่อบันทึกประวัติส่วนตัว</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -332,7 +328,6 @@ if st.session_state.user is None:
     with auth_col2:
         auth_mode = st.tabs(["🔐 เข้าสู่ระบบ", "📝 สมัครสมาชิก", "🔑 ลืมรหัสผ่าน"])
         
-        # TAB 1: เข้าสู่ระบบ
         with auth_mode[0]:
             st.subheader("เข้าสู่ระบบ")
             login_email = st.text_input("อีเมล", key="login_email_input", placeholder="your_email@gmail.com")
@@ -352,7 +347,6 @@ if st.session_state.user is None:
                 else:
                     st.warning("กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน")
 
-        # TAB 2: สมัครสมาชิก
         with auth_mode[1]:
             st.subheader("สร้างบัญชีใหม่")
             signup_email = st.text_input("อีเมลสำหรับสมัคร", key="signup_email_input", placeholder="your_email@gmail.com")
@@ -376,7 +370,6 @@ if st.session_state.user is None:
                 else:
                     st.warning("กรุณากรอกข้อมูลให้ครบทุกช่อง")
 
-        # TAB 3: ลืมรหัสผ่าน
         with auth_mode[2]:
             st.subheader("รีเซ็ตรหัสผ่าน")
             reset_email_input = st.text_input("กรอกอีเมลของคุณ", key="reset_email_input")
@@ -386,13 +379,13 @@ if st.session_state.user is None:
                     with st.spinner("กำลังส่งอีเมล..."):
                         res = reset_password(reset_email_input)
                         if res["success"]:
-                            st.success("ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณเรียบร้อยแล้ว โปรดตรวจสอบใน กล่องข้อความ/Junk Mail")
+                            st.success("ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณเรียบร้อยแล้ว")
                         else:
                             st.error(res["error"])
                 else:
                     st.warning("กรุณากรอกอีเมล")
 
-    st.stop() # หยุดการทำงานไม่ให้เล่นส่วนแอปถ้ายังไม่ Login
+    st.stop()
 
 # ==========================================
 # 6. Main App Content (หลังเข้าสู่ระบบแล้ว)
@@ -401,7 +394,7 @@ if st.session_state.user is None:
 # Top User Bar Header
 top_c1, top_c2 = st.columns([3, 1])
 with top_c1:
-    st.markdown(f"""
+    st.markdown("""
     <div class="main-header" style="text-align: left; margin-bottom: 0;">
         <h1 style="font-size: 1.8rem; margin:0;">🎧 AI DJ Mood Matcher Pro</h1>
     </div>
@@ -514,6 +507,16 @@ if nav_choice == "🎧 AI DJ Studio":
     if st.button("✨ ให้ AI DJ จัดเพลงให้ทันที", type="primary", use_container_width=True):
         if mood_text:
             with st.spinner("AI กำลังสวมบทบาท DJ และคัดสรรเพลย์ลิสต์..."):
+                current_user_email = st.session_state.user.get('email', 'Anonymous') if st.session_state.user else 'Anonymous'
+                
+                # บันทึกประวัติการบอกอารมณ์ลง Google Sheets
+                save_mood_history(
+                    user_email=current_user_email,
+                    mood_text=mood_text,
+                    persona=dj_persona,
+                    energy_level=energy_level
+                )
+
                 augmented_prompt = f"[สไตล์ DJ: {dj_persona}] [ระดับพลังงานเพลง: {energy_level}] ความรู้สึกผู้ใช้: {mood_text}"
                 ai_result = get_playlist_from_ai(augmented_prompt, num_songs)
                 
