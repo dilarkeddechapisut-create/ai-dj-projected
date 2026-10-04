@@ -485,7 +485,7 @@ st.markdown(f"""
         pointer-events: none;
     }}
 
-    h1, h2, h3, h4, h5, h6, p, span, div, label {{
+    h1, h2, h3, h4, h5, h6, p, span, div {{
         color: #ffffff !important;
         text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
     }}
@@ -513,6 +513,7 @@ st.markdown(f"""
         text-shadow: 0 0 12px rgba(29, 185, 84, 0.6) !important;
     }}
 
+    /* ปรับแต่ง Label หัวข้อช่องกรอกข้อมูลให้คมชัด */
     label, 
     .stWidgetLabel, 
     div[data-testid="stWidgetLabel"] label,
@@ -520,42 +521,58 @@ st.markdown(f"""
     label p, 
     label span {{
         color: #ffffff !important;
-        font-weight: 600 !important;
-        font-size: 1rem !important;
+        font-weight: 700 !important;
+        font-size: 1.05rem !important;
         text-shadow: 0 2px 5px rgba(0, 0, 0, 0.95) !important;
+    }}
+
+    /* ปรับแต่ง Textarea & Input Box ให้เป็นสีเข้ม Glassmorphic อ่านง่าย ตัวหนังสือขาวคมชัด */
+    .stTextArea textarea,
+    .stTextInput input,
+    div[data-baseweb="input"],
+    div[data-baseweb="textarea"],
+    div[data-baseweb="base-input"],
+    div[data-baseweb="input"] > div,
+    div[data-baseweb="textarea"] > div,
+    div[data-baseweb="input"] input,
+    div[data-baseweb="textarea"] textarea {{
+        background-color: rgba(18, 22, 32, 0.92) !important;
+        background: rgba(18, 22, 32, 0.92) !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        font-size: 1.05rem !important;
+        font-weight: 500 !important;
+        font-family: 'Prompt', sans-serif !important;
+        border-radius: 14px !important;
     }}
 
     div[data-baseweb="input"],
     div[data-baseweb="textarea"] {{
-        background: rgba(18, 18, 22, 0.88) !important;
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.35) !important;
-        border-radius: 14px !important;
-        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6) !important;
     }}
 
-    div[data-baseweb="input"] > div,
-    div[data-baseweb="textarea"] > div {{
-        background: transparent !important;
+    /* เมื่อคลิกพิมพ์ที่กล่องข้อความ (Focus State) */
+    .stTextArea textarea:focus,
+    .stTextInput input:focus,
+    div[data-baseweb="textarea"]:focus-within,
+    div[data-baseweb="input"]:focus-within {{
+        border-color: #1DB954 !important;
+        box-shadow: 0 0 15px rgba(29, 185, 84, 0.6) !important;
     }}
 
-    div[data-baseweb="input"] input,
-    div[data-baseweb="textarea"] textarea {{
-        color: #ffffff !important;
-        font-size: 1.05rem !important;
-        font-family: 'Prompt', sans-serif !important;
-        background: transparent !important;
-    }}
-
+    /* ข้อความ Placeholder ในช่องกรอก */
+    .stTextArea textarea::placeholder,
+    .stTextInput input::placeholder,
     div[data-baseweb="textarea"] textarea::placeholder,
     div[data-baseweb="input"] input::placeholder {{
-        color: rgba(255, 255, 255, 0.65) !important;
+        color: rgba(255, 255, 255, 0.55) !important;
+        -webkit-text-fill-color: rgba(255, 255, 255, 0.55) !important;
     }}
 
     div[data-baseweb="select"] > div {{
-        background: rgba(18, 18, 22, 0.88) !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        background: rgba(18, 18, 22, 0.92) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 12px !important;
         color: #ffffff !important;
     }}
@@ -587,7 +604,7 @@ st.markdown(f"""
         box-shadow: none !important;
     }}
 
-    /* ปรับแต่งปุ่มกดทั่วไปและปุ่ม Streaming ให้สไตล์ Glassmorphism กลมกลืนเหมือนกัน */
+    /* สไตล์ปุ่มกดทั่วไป และ Streaming Link Button */
     div.stButton > button,
     div.stLinkButton > a {{
         background: rgba(255, 255, 255, 0.15) !important;
@@ -793,7 +810,6 @@ def format_ai_analysis_to_html(text):
     """จัดรูปแบบ Markdown ข้อความของ AI ให้แสดงผลสวยงามและ fit ใน Glass Card"""
     if not text:
         return ""
-    # แปลง **ข้อความตัวหนา** ให้เป็นสีเขียว
     formatted = re.sub(r'\*\*(.*?)\*\*', r'<strong style="color: #1ed760; font-weight: 600;">\1</strong>', text)
     lines = formatted.split('\n')
     html_lines = []
@@ -1082,7 +1098,6 @@ if nav_choice == "🎧 AI DJ Studio":
                     energy_level=energy_level
                 )
 
-                # สั่งควบคุมให้ AI ตอบข้อความทักทายกระชับสั้น ไม่ยาวเกินไป
                 augmented_prompt = f"[สไตล์ DJ: {dj_persona}] [ระดับพลังงานเพลง: {energy_level}] [ข้อแนะนำ: ตอบข้อความทักทายให้กำลังใจแบบกระชับสั้นๆ ไม่เกิน 2 ประโยค] ความรู้สึกผู้ใช้: {mood_text}"
                 ai_result = get_playlist_from_ai(augmented_prompt, num_songs)
                 
@@ -1119,7 +1134,6 @@ if nav_choice == "🎧 AI DJ Studio":
     if len(st.session_state.playlist) > 0:
         st.success("🎉 จัดเพลย์ลิสต์เสร็จเรียบร้อย!")
         
-        # ปรับปรุงเน้นกล่องข้อความจาก DJ ให้อ่านง่าย ชัดเจน ตัวหนาบนพื้นหลังเข้ม
         st.markdown(f"""
         <div style="
             background: rgba(18, 22, 34, 0.88);
@@ -1144,7 +1158,6 @@ if nav_choice == "🎧 AI DJ Studio":
             reason_text = track_info.get('reason', 'เพลงนี้เหมาะกับบรรยากาศของคุณพอดี!')
             
             with cols[i % 3]:
-                # เพิ่ม "💡 คำแนะนำจาก DJ:" และปรับให้คำแนะนำแสดงผลเต็มกล่อง ไม่โดนตัดขาด
                 st.markdown(f"""
                 <div class="spotify-card">
                     <div>
@@ -1227,12 +1240,11 @@ elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์"
                     st.rerun()
 
 # ------------------------------------------
-# PAGE 3: 📊 สถิติ & วิเคราะห์รสนิยมดนตรี (AI Audio Features Profile)
+# PAGE 3: 📊 สถิติ & วิเคราะห์
 # ------------------------------------------
 elif nav_choice == "📊 สถิติ & วิเคราะห์":
     st.subheader("📈 วิเคราะห์สถิติอารมณ์และรสนิยมดนตรี")
     
-    # เลือกชุดเพลงที่ต้องการวิเคราะห์
     analysis_source = st.radio(
         "🎯 เลือกชุดเพลงที่ต้องการวิเคราะห์:",
         ["❤️ เพลงในรายการโปรด", "✨ เพลงจาก AI DJ Studio"],
@@ -1253,7 +1265,6 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
         m_col2.metric("สถานะ FreqBlog API", "พร้อมใช้งาน 🟢")
         m_col3.metric("เพลงที่มีไฟล์ตัวอย่าง", f"{sum(1 for t in target_playlist if t.get('preview_url'))} เพลง")
 
-        # 1. แสดง Radar Chart สถิติ Audio Features
         with st.spinner(f"กำลังดึงข้อมูล Audio Features ของ{source_name} จาก FreqBlog API..."):
             try:
                 fig = create_radar_chart(target_playlist)
@@ -1266,7 +1277,6 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
 
         st.divider()
 
-        # 2. ฟีเจอร์ AI วิเคราะห์รสนิยมดนตรีและแนะนำเพลง
         st.markdown(f"### 🤖 AI วิเคราะห์รสนิยมดนตรีจาก Audio Features ({source_name})")
         st.write("วิเคราะห์ลักษณะอารมณ์ทางดนตรี เช่น Energy, Danceability, Valence และ Acousticness เพื่อถอดรหัสตัวตนดนตรีของคุณ")
 
@@ -1291,7 +1301,6 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
                     st.session_state.ai_taste_recommendations = ai_response.get('songs', [])
                     st.toast("วิเคราะห์รสนิยมดนตรีเสร็จสิ้น!", icon="🎉")
 
-        # แสดงผลการวิเคราะห์ใน Glassmorphism Card (Fit in สมบูรณ์แบบ)
         if st.session_state.ai_taste_analysis:
             content_html = format_ai_analysis_to_html(st.session_state.ai_taste_analysis)
             
