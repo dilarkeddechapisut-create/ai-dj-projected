@@ -2,45 +2,47 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import streamlit as st
 
-client_id = st.secrets["SPOTIFY_CLIENT_ID"]
-client_secret = st.secrets["SPOTIFY_CLIENT_SECRET"]
+def get_spotify_client():
+    client_id = st.secrets.get("SPOTIFY_CLIENT_ID", "")
+    client_secret = st.secrets.get("SPOTIFY_CLIENT_SECRET", "")
+    if not client_id or not client_secret:
+        return None
+    try:
+        return spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+            client_id=client_id,
+            client_secret=client_secret
+        ))
+    except Exception as e:
+        print(f"Spotify Init Error: {e}")
+        return None
 
-sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
-    client_id=client_id,
-    client_secret=client_secret
-))
+sp = get_spotify_client()
 
 def search_spotify_track(song_title, artist_name):
-    """ค้นหาเพลงและดึงข้อมูลพื้นฐาน"""
-    query = f"track:{song_title} artist:{artist_name}"
-    results = sp.search(q=query, type='track', limit=1)
-    
-    tracks = results.get('tracks', {}).get('items', [])
-    if not tracks:
+    """ค้นหาเพลงใน Spotify เพื่อเอา รูปปก ลิงก์ และ ID (ไม่ดึง Audio Features จาก Spotify แล้ว)"""
+    if not sp:
         return None
-        
-    track = tracks[0]
-    track_id = track['id']
-    
-    # ดึงค่า Audio Features (ใส่ Try-Except ดัก Error จากนโยบายใหม่ของ Spotify)
+
     try:
-        features = sp.audio_features(track_id)[0]
-        energy = features['energy'] if features else 0.5
-        valence = features['valence'] if features else 0.5
-        danceability = features['danceability'] if features else 0.5
+        query = f"track:{song_title} artist:{artist_name}"
+        results = sp.search(q=query, type='track', limit=1)
+        
+        tracks = results.get('tracks', {}).get('items', [])
+        if not tracks:
+            return None
+            
+        track = tracks[0]
+        track_id = track['id']
+        album_cover = track['album']['images'][0]['url'] if track['album']['images'] else None
+        
+        return {
+            "id": track_id,
+            "name": track['name'],
+            "artist": track['artists'][0]['name'],
+            "album_cover": album_cover,
+            "preview_url": track.get('preview_url'),
+            "spotify_url": track['external_urls']['spotify']
+        }
     except Exception as e:
-        # หาก Spotify API บล็อก จะตั้งค่ากลางๆ ไว้ไม่ให้แอปพัง
-        print(f"Spotify Audio Features API ถูกจำกัด: {e}")
-        energy, valence, danceability = 0.5, 0.5, 0.5
-    
-    return {
-        "id": track_id,
-        "name": track['name'],
-        "artist": track['artists'][0]['name'],
-        "album_cover": track['album']['images'][0]['url'],
-        "preview_url": track.get('preview_url'),
-        "spotify_url": track['external_urls']['spotify'],
-        "energy": energy,
-        "valence": valence,
-        "danceability": danceability
-    }
+        print(f"Spotify Search Error: {e}")
+        return None

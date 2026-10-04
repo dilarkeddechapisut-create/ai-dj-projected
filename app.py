@@ -452,7 +452,7 @@ def render_liquid_music_player(playlist=None, start_index=0, autoplay=True):
     components.html(player_code, height=0, width=0)
 
 # ==========================================
-# 3. Responsive CSS & Style (FIXED BG VIDEO)
+# 3. Responsive CSS & Style
 # ==========================================
 st.markdown(f"""
 <style>
@@ -463,7 +463,6 @@ st.markdown(f"""
         font-family: 'Prompt', sans-serif;
     }}
 
-    /* แก้ไขโปร่งใสของ stApp เพื่อให้วิดีโอพื้นหลังแสดงผล */
     .stApp {{
         background: transparent !important;
         background-color: transparent !important;
@@ -699,8 +698,10 @@ def fetch_live_track_info(title, artist, tag):
     cover = img_url if img_url else (track_info.get('album_cover') if track_info else fallback_img)
     preview = preview_url if preview_url else (track_info.get('preview_url') if track_info else None)
     spotify_link = full_url if full_url else (track_info.get('spotify_url') if track_info else f"https://open.spotify.com/search/{title}%20{artist}")
+    spotify_id = track_info.get('id') if track_info else None
 
     return {
+        "id": spotify_id,
         "name": title,
         "artist": artist,
         "tag": tag,
@@ -824,7 +825,6 @@ if st.session_state.user is None:
 # 7. Main App Content (หลังเข้าสู่ระบบแล้ว)
 # ==========================================
 
-# Top User Bar Header
 top_c1, top_c2 = st.columns([3, 1])
 with top_c1:
     st.markdown("""
@@ -961,6 +961,7 @@ if nav_choice == "🎧 AI DJ Studio":
                     for song in ai_result.get('songs', []):
                         track_data = fetch_live_track_info(song['title'], song['artist'], dj_persona)
                         track_info = {
+                            'id': track_data.get('id'),
                             'name': song['title'],
                             'artist': song['artist'],
                             'album_cover': track_data['cover'],
@@ -1060,6 +1061,7 @@ elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์"
                 is_fav = any(f['name'] == song['name'] for f in st.session_state.favorites)
                 if st.button("❤️" if is_fav else "🤍 เก็บไว้", key=f"grid_fav_{selected_mood}_{idx}", use_container_width=True):
                     track_dict = {
+                        'id': song.get('id'),
                         'name': song['name'],
                         'artist': song['artist'],
                         'album_cover': song['cover'],
@@ -1071,22 +1073,25 @@ elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์"
                     st.rerun()
 
 # ------------------------------------------
-# PAGE 3: 📊 สถิติ & บทวิเคราะห์
+# PAGE 3: 📊 สถิติ & บทวิเคราะห์ (เชื่อมต่อกับ FreqBlog API)
 # ------------------------------------------
 elif nav_choice == "📊 สถิติ & วิเคราะห์":
-    st.subheader("📈 วิเคราะห์สถิติอารมณ์ของ Playlist")
+    st.subheader("📈 วิเคราะห์สถิติอารมณ์ของ Playlist (ด้วย FreqBlog API)")
     if len(st.session_state.playlist) > 0:
         m_col1, m_col2, m_col3 = st.columns(3)
         m_col1.metric("จำนวนเพลงทั้งหมด", f"{len(st.session_state.playlist)} เพลง")
-        m_col2.metric("สถานะ AI DJ", "พร้อมใช้งาน")
+        m_col2.metric("สถานะ FreqBlog API", "พร้อมใช้งาน 🟢")
         m_col3.metric("เพลงที่มีไฟล์ตัวอย่าง", f"{sum(1 for t in st.session_state.playlist if t.get('preview_url'))} เพลง")
 
-        try:
-            fig = create_radar_chart(st.session_state.playlist)
-            if fig:
-                st.plotly_chart(fig, use_container_width=True)
-        except Exception:
-            st.info("ระบบกำลังประมวลผลแผนภูมิสถิติ...")
+        with st.spinner("กำลังดึงข้อมูล Audio Features จาก FreqBlog API..."):
+            try:
+                fig = create_radar_chart(st.session_state.playlist)
+                if fig:
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning("ไม่สามารถวิเคราะห์ข้อมูลจาก FreqBlog ได้ในขณะนี้")
+            except Exception as e:
+                st.error(f"เกิดข้อผิดพลาดในการสร้างกราฟ: {e}")
     else:
         st.info("💡 สร้างเพลย์ลิสต์ในหน้า 'AI DJ Studio' ก่อน เพื่อดูการวิเคราะห์สถิติอารมณ์เพลง")
 
@@ -1148,7 +1153,6 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
 # ==========================================
 active_player_playlist = []
 
-# ดึงรายการเพลงจาก session_state.playlist มาใส่ตัวเล่นเพลง
 if st.session_state.playlist:
     for track in st.session_state.playlist:
         if track.get('preview_url'):
@@ -1159,10 +1163,8 @@ if st.session_state.playlist:
                 "url": track.get('preview_url')
             })
 
-# กรณีที่ผู้ใช้กดเล่นเพลงเฉพาะเพลงใดเพลงหนึ่ง
 if st.session_state.current_preview_url:
     start_idx = 0
-    # ค้นหาว่าเพลงที่เลือกตรงกับดัชนีใดใน playlist
     found = False
     for idx, track_item in enumerate(active_player_playlist):
         if track_item['url'] == st.session_state.current_preview_url:
@@ -1170,7 +1172,6 @@ if st.session_state.current_preview_url:
             found = True
             break
     
-    # หากเพลงที่กดฟังไม่อยู่ใน playlist (เช่น กดจากหน้าสำรวจ หรือหน้าเพลงโปรด)
     if not found:
         standalone_track = {
             "title": st.session_state.current_track_name or "Unknown Track",
@@ -1183,3 +1184,36 @@ if st.session_state.current_preview_url:
 
     render_liquid_music_player(playlist=active_player_playlist, start_index=start_idx, autoplay=True)
 
+# ==========================================
+# 9. Google Sheets Connection Verification
+# ==========================================
+st.write("---")
+st.subheader("🔍 ระบบตรวจสอบการเชื่อมต่อ Google Sheets")
+
+url = st.secrets.get("APPS_SCRIPT_URL", "")
+st.write(f"**1. URL ใน Secrets:** `{url}`")
+
+if not url:
+    st.error("❌ ไม่พบ APPS_SCRIPT_URL ในไฟล์ secrets.toml (กรุณาเช็กตำแหน่งไฟล์ .streamlit/secrets.toml)")
+else:
+    if st.button("🧪 ทดสอบยิงข้อมูลลง Sheet จาก Streamlit"):
+        try:
+            payload = {
+                "action_type": "MOOD_LOG",
+                "user_email": "streamlit_test@gmail.com",
+                "mood_text": "ทดสอบยิงจาก Streamlit UI"
+            }
+            headers = {"User-Agent": "Mozilla/5.0"}
+            
+            response = requests.get(url, params=payload, headers=headers, timeout=10)
+            
+            st.write(f"**2. HTTP Status Code:** `{response.status_code}`")
+            st.write(f"**3. ข้อความตอบรับจาก Google:** `{response.text}`")
+            
+            if "Success" in response.text:
+                st.success("🎉 บันทึกลง Google Sheet สำเร็จแล้ว!")
+            else:
+                st.warning("⚠️ การส่งข้อมูลสำเร็จ แต่ Google ตอบกลับข้อความอื่น")
+                
+        except Exception as e:
+            st.error(f"❌ เกิดข้อผิดพลาดใน Python: {e}")
