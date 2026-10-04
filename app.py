@@ -19,13 +19,11 @@ BG_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07
 
 st.markdown(f"""
 <style>
-    /* พื้นหลังหลักโปร่งใสเพื่อมองเห็นวิดีโอด้านหลัง */
     .stApp {{
         background: transparent !important;
         color: #ffffff;
     }}
 
-    /* ซ่อนแถบดำและตั้งค่า iframe ของระบบอัดเสียงให้โปร่งใส */
     iframe,
     iframe[title="streamlit_mic_recorder.speech_to_text"],
     div[data-testid="stCustomComponentV1"],
@@ -36,7 +34,6 @@ st.markdown(f"""
         box-shadow: none !important;
     }}
 
-    /* วิดีโอ Background เต็มจอ */
     #bg-video {{
         position: fixed;
         right: 0;
@@ -50,34 +47,24 @@ st.markdown(f"""
         filter: brightness(0.32);
     }}
 
-    /* ------------------------------------------ */
-    /* Spotify Top-Center Pill Navigation Switcher */
-    /* ------------------------------------------ */
-    .top-nav-container {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 25px;
-        margin-top: -10px;
-    }}
-
+    /* Spotify Top Navigation Switcher */
     div[data-testid="stRadio"] > div[role="radiogroup"] {{
         display: flex !important;
         flex-direction: row !important;
         justify-content: center !important;
         align-items: center !important;
         gap: 12px !important;
-        background-color: rgba(18, 18, 18, 0.75);
+        background-color: rgba(18, 18, 18, 0.85);
         padding: 8px 16px;
         border-radius: 30px;
         backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.12);
         width: fit-content;
         margin: 0 auto;
     }}
 
     div[data-testid="stRadio"] label {{
-        background-color: rgba(255, 255, 255, 0.1) !important;
+        background-color: rgba(255, 255, 255, 0.08) !important;
         color: #ffffff !important;
         border-radius: 20px !important;
         padding: 6px 18px !important;
@@ -94,36 +81,28 @@ st.markdown(f"""
     }}
 
     div[data-testid="stRadio"] label[data-checked="true"] {{
-        background-color: #ffffff !important;
-        color: #000000 !important;
+        background-color: #1DB954 !important;
+        color: #ffffff !important;
         font-weight: 700 !important;
     }}
 
-    div[data-testid="stRadio"] div[data-testid="stMarkdownContainer"] p {{
-        font-size: 0.95rem !important;
-    }}
-
-    /* ซ่อนจุดวงกลม Radio Default */
     div[data-testid="stRadio"] input[type="radio"] {{
         display: none !important;
     }}
 
-    /* ------------------------------------------ */
-    /* Spotify Grid Cards Design (หน้าสำรวจเพลง)  */
-    /* ------------------------------------------ */
+    /* Spotify Grid Cards Design */
     .spotify-card {{
         background-color: rgba(24, 24, 24, 0.85);
         border-radius: 12px;
         padding: 14px;
         transition: all 0.3s ease;
-        position: relative;
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        margin-bottom: 20px;
+        margin-bottom: 12px;
     }}
     .spotify-card:hover {{
         background-color: rgba(40, 40, 40, 0.95);
-        transform: translateY(-5px);
+        transform: translateY(-4px);
         box-shadow: 0 8px 20px rgba(0,0,0,0.6);
     }}
     .spotify-card-img-wrapper {{
@@ -132,7 +111,8 @@ st.markdown(f"""
         padding-top: 100%;
         border-radius: 8px;
         overflow: hidden;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
+        background-color: #333;
     }}
     .spotify-card-img {{
         position: absolute;
@@ -144,33 +124,32 @@ st.markdown(f"""
     }}
     .spotify-card-title {{
         font-weight: 700;
-        font-size: 1rem;
+        font-size: 0.95rem;
         color: #ffffff;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }}
     .spotify-card-subtitle {{
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         color: #b3b3b3;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }}
     .spotify-tag {{
         display: inline-block;
         background: rgba(29, 185, 84, 0.2);
         color: #1DB954;
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         font-weight: 600;
         padding: 2px 8px;
         border-radius: 10px;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }}
 
-    /* ตกแต่ง Header */
     .main-header {{
         text-align: center;
         margin-top: 5px;
@@ -192,7 +171,7 @@ st.markdown(f"""
         position: fixed !important;
         bottom: 25px !important;
         right: 25px !important;
-        width: 350px !important;
+        width: 360px !important;
         max-width: calc(100vw - 40px) !important;
         background: #121212 !important;
         border: 1.5px solid #1DB954 !important;
@@ -203,7 +182,6 @@ st.markdown(f"""
     }}
 </style>
 
-<!-- HTML Tag วิดีโอพื้นหลัง -->
 <video autoplay loop muted playsinline id="bg-video">
     <source src="{BG_VIDEO_URL}" type="video/mp4">
 </video>
@@ -232,7 +210,35 @@ if 'history' not in st.session_state:
     st.session_state.history = []
 
 # ==========================================
-# 3. Header & Top-Center Spotify Nav Switcher
+# 3. Helper Function ดึงข้อมูลเพลงแนะนำสดๆ
+# ==========================================
+@st.cache_data(ttl=3600)
+def fetch_live_track_info(title, artist, tag):
+    """ ดึงข้อมูลรูปและไฟล์เสียงสดๆ จาก Spotify/Preview Service """
+    try:
+        track_info = search_spotify_track(title, artist)
+    except:
+        track_info = None
+
+    img_url, preview_url, full_url = get_track_preview(title, artist)
+
+    fallback_img = f"https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80"
+    
+    cover = img_url if img_url else (track_info.get('album_cover') if track_info else fallback_img)
+    preview = preview_url if preview_url else (track_info.get('preview_url') if track_info else None)
+    spotify_link = full_url if full_url else (track_info.get('spotify_url') if track_info else f"https://open.spotify.com/search/{title}%20{artist}")
+
+    return {
+        "name": title,
+        "artist": artist,
+        "tag": tag,
+        "cover": cover,
+        "preview": preview,
+        "spotify_url": spotify_link
+    }
+
+# ==========================================
+# 4. Header & Top Navigation
 # ==========================================
 st.markdown("""
 <div class="main-header">
@@ -240,7 +246,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ปุ่มสลับหน้าอยู่ด้านบนตรงกลาง (Spotify Pills Style)
 nav_choice = st.radio(
     "Navigation",
     ["🎧 AI DJ Studio", "🎵 สำรวจเพลงตามอารมณ์", "📊 สถิติ & วิเคราะห์", "❤️ เพลงโปรด & ประวัติ"],
@@ -250,47 +255,44 @@ nav_choice = st.radio(
 
 st.divider()
 
-# ==========================================
-# 4. Mock Data สำหรับหน้า "สำรวจเพลงตามอารมณ์"
-# ==========================================
-MOOD_PRESETS = {
+# รายชื่อเพลงแนะนำจำแนกตามอารมณ์
+MOOD_PRESETS_SEEDS = {
     "☕ ชิลล์ & ทำงาน (Focus & Chill)": [
-        {"name": "Sunflower", "artist": "Post Malone, Swae Lee", "tag": "Lofi / Chill", "cover": "https://i.scdn.co/image/ab67616d0000b273e2e352d89826aef6dbd5ff8f", "preview": "https://p.scdn.co/mp3-preview/38072ebf3f721c569f6e1f0e428e2171545625bf"},
-        {"name": "Lofi Study Beats", "artist": "Chillhop Music", "tag": "Focus Beats", "cover": "https://i.scdn.co/image/ab67616d0000b273b5f00e93297a768f44d18306", "preview": "https://p.scdn.co/mp3-preview/a6e9a66d0c75c58bc39b98ec35a09e0750766b1e"},
-        {"name": "Coffee Shop Vibes", "artist": "Acoustic Morning", "tag": "Acoustic", "cover": "https://i.scdn.co/image/ab67616d0000b27341e411b9319808a5433a0117", "preview": None},
-        {"name": "Night Trouble", "artist": "Petit Biscuit", "tag": "Chill Electronic", "cover": "https://i.scdn.co/image/ab67616d0000b2732a39a03975c3f858277be0c5", "preview": None}
+        {"title": "Sunflower", "artist": "Post Malone", "tag": "Lofi / Chill"},
+        {"title": "Best Part", "artist": "Daniel Caesar", "tag": "Acoustic R&B"},
+        {"title": "ดวงใจ", "artist": "PALMY", "tag": "Chill Pop"},
+        {"title": "Night Trouble", "artist": "Petit Biscuit", "tag": "Electronic Chill"}
     ],
     "🌧️ ฝนตก & เหงา (Rainy Mood)": [
-        {"name": "Glimpse of Us", "artist": "Joji", "tag": "Sad Ballad", "cover": "https://i.scdn.co/image/ab67616d0000b273014101e469d727b1f516a570", "preview": "https://p.scdn.co/mp3-preview/0d3c631a7894d036e78864f13fb2d1e02ef29b87"},
-        {"name": "พิง", "artist": "NONT TANONT", "tag": "Thai Pop", "cover": "https://i.scdn.co/image/ab67616d0000b2737a30ef1d22754e3edc41fa2a", "preview": None},
-        {"name": "ฝนตกไหม", "artist": "Three Man Down", "tag": "Indie Rock", "cover": "https://i.scdn.co/image/ab67616d0000b273cb69ec1dfbe39d4825d194cf", "preview": None},
-        {"name": "คำถามซึ่งไร้คนตอบ", "artist": "Getsunova", "tag": "Thai Pop", "cover": "https://i.scdn.co/image/ab67616d0000b273d40a2fdf2edc93e43dd59d24", "preview": None}
+        {"title": "Glimpse of Us", "artist": "Joji", "tag": "Sad Ballad"},
+        {"title": "พิง", "artist": "NONT TANONT", "tag": "Thai Pop"},
+        {"title": "ฝนตกไหม", "artist": "Three Man Down", "tag": "Indie Rock"},
+        {"title": "คำถามซึ่งไร้คนตอบ", "artist": "Getsunova", "tag": "Pop Rock"}
     ],
     "🔥 พลังงานสูง & ออกกำลังกาย (Workout)": [
-        {"name": "Blinding Lights", "artist": "The Weeknd", "tag": "Synthwave", "cover": "https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b5d718688e", "preview": "https://p.scdn.co/mp3-preview/3e10419131d96e511737e6f6a7350730d1d2b861"},
-        {"name": "Levitating", "artist": "Dua Lipa", "tag": "Dance Pop", "cover": "https://i.scdn.co/image/ab67616d0000b27329d2f2d9c4c51921f66a2e92", "preview": None},
-        {"name": "Stronger", "artist": "Kanye West", "tag": "Hip-Hop", "cover": "https://i.scdn.co/image/ab67616d0000b2732626e25501869e5d4e782e44", "preview": None},
-        {"name": "วัดปะหล่ะ?", "artist": "4EVE", "tag": "T-Pop Energy", "cover": "https://i.scdn.co/image/ab67616d0000b2732ef6dbf32bbd74f26b527581", "preview": None}
+        {"title": "Blinding Lights", "artist": "The Weeknd", "tag": "Synthwave"},
+        {"title": "Levitating", "artist": "Dua Lipa", "tag": "Dance Pop"},
+        {"title": "Stronger", "artist": "Kanye West", "tag": "Hip-Hop"},
+        {"title": "วัดปะหล่ะ?", "artist": "4EVE", "tag": "T-Pop Energy"}
     ],
     "💖 ความรัก & อบอุ่น (Romantic Vibes)": [
-        {"name": "Perfect", "artist": "Ed Sheeran", "tag": "Acoustic Pop", "cover": "https://i.scdn.co/image/ab67616d0000b273ba5db46f4b838ef6027e6f96", "preview": None},
-        {"name": "Until I Found You", "artist": "Stephen Sanchez", "tag": "Retro Love", "cover": "https://i.scdn.co/image/ab67616d0000b2735233c3066373b9e4a3627f12", "preview": None},
-        {"name": "รักแรก (First Love)", "artist": "NONT TANONT", "tag": "Thai Ballad", "cover": "https://i.scdn.co/image/ab67616d0000b27376c6dd3a097d6fb3a1e0b57e", "preview": None},
-        {"name": "Double Take", "artist": "dhruv", "tag": "R&B / Soul", "cover": "https://i.scdn.co/image/ab67616d0000b27339735d64235e26bbf117d337", "preview": None}
+        {"title": "Perfect", "artist": "Ed Sheeran", "tag": "Acoustic Pop"},
+        {"title": "Until I Found You", "artist": "Stephen Sanchez", "tag": "Retro Love"},
+        {"title": "รักแรก", "artist": "NONT TANONT", "tag": "Thai Ballad"},
+        {"title": "Double Take", "artist": "dhruv", "tag": "R&B / Soul"}
     ]
 }
 
 # ==========================================
-# 5. การแสดงผลตามหน้าที่เลือก (Pages)
+# 5. การแสดงผลแต่ละหน้า
 # ==========================================
 
 # ------------------------------------------
-# PAGE 1: 🎧 AI DJ STUDIO (หน้าสร้าง & จัดเพลง)
+# PAGE 1: 🎧 AI DJ STUDIO
 # ------------------------------------------
 if nav_choice == "🎧 AI DJ Studio":
     st.markdown("### 🎙️ 1. เล่าความรู้สึก หรือเลือกอารมณ์ด่วน")
 
-    # ปุ่มเลือกอารมณ์ด่วน (Quick Mood Chips)
     q_col1, q_col2, q_col3, q_col4, q_col5, q_col6 = st.columns(6)
     if q_col1.button("💻 โฟกัสทำงาน", use_container_width=True):
         st.session_state.user_input_text = "กำลังนั่งทำงาน อยากได้เพลงเคลียร์สมอง ช่วยให้มีสมาธิยาวๆ"
@@ -305,7 +307,6 @@ if nav_choice == "🎧 AI DJ Studio":
     if q_col6.button("💔 อกหักรักพัง", use_container_width=True):
         st.session_state.user_input_text = "เพิ่งเลิกกับแฟน เสียใจมาก ขอเพลงเศร้าตอกย้ำอารมณ์คนอกหัก"
 
-    # ปุ่มพูดด้วยเสียง (Speech to Text)
     text_from_mic = speech_to_text(
         language='th-TH', 
         start_prompt="🎙️ กดเพื่อพูดความรู้สึก", 
@@ -318,7 +319,6 @@ if nav_choice == "🎧 AI DJ Studio":
         st.session_state.user_input_text = text_from_mic
         st.session_state.last_mic_text = text_from_mic
 
-    # ช่องกรอกข้อความหลัก
     mood_text = st.text_area(
         "ความรู้สึกของคุณ:",
         value=st.session_state.user_input_text,
@@ -355,34 +355,20 @@ if nav_choice == "🎧 AI DJ Studio":
                     valid_tracks = []
                     
                     for song in ai_result['songs']:
-                        try:
-                            track_info = search_spotify_track(song['title'], song['artist'])
-                        except:
-                            track_info = None
-
-                        img_url, preview_url, full_url = get_track_preview(song['title'], song['artist'])
-                        
-                        if not track_info:
-                            track_info = {
-                                'name': song['title'],
-                                'artist': song['artist'],
-                                'album_cover': img_url if img_url else "https://via.placeholder.com/500?text=No+Cover",
-                                'preview_url': preview_url,
-                                'spotify_url': full_url if full_url else "#"
-                            }
-                        else:
-                            if preview_url: track_info['preview_url'] = preview_url
-                            if img_url: track_info['album_cover'] = img_url
-                            if not track_info.get('spotify_url') and full_url: track_info['spotify_url'] = full_url
-                        
-                        if track_info:
-                            track_info['reason'] = song['reason']
-                            valid_tracks.append(track_info)
+                        track_data = fetch_live_track_info(song['title'], song['artist'], dj_persona)
+                        track_info = {
+                            'name': song['title'],
+                            'artist': song['artist'],
+                            'album_cover': track_data['cover'],
+                            'preview_url': track_data['preview'],
+                            'spotify_url': track_data['spotify_url'],
+                            'reason': song['reason']
+                        }
+                        valid_tracks.append(track_info)
                     
                     st.session_state.playlist = valid_tracks
                     st.session_state.current_track_index = 0
                     
-                    # บันทึกลง History
                     st.session_state.history.insert(0, {
                         'time': datetime.now().strftime("%H:%M - %d/%m/%Y"),
                         'mood': mood_text,
@@ -393,7 +379,6 @@ if nav_choice == "🎧 AI DJ Studio":
         else:
             st.warning("⚠️ กรุณาพิมพ์หรือเลือกความรู้สึกของคุณก่อนครับ")
 
-    # แสดงผล Playlist
     if len(st.session_state.playlist) > 0:
         st.success("🎉 จัดเพลย์ลิสต์เสร็จเรียบร้อย!")
         st.markdown(f"### 💌 ข้อความจาก {dj_persona}:\n> *{st.session_state.ai_message}*")
@@ -412,7 +397,6 @@ if nav_choice == "🎧 AI DJ Studio":
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # ปุ่มฟังตัวอย่าง & Fav
                 btn_c1, btn_c2, btn_c3 = st.columns([1.2, 0.8, 1])
                 with btn_c1:
                     if track_info.get('preview_url'):
@@ -422,11 +406,11 @@ if nav_choice == "🎧 AI DJ Studio":
                             st.session_state.current_track_index = i
                             st.rerun()
                     else:
-                        st.button("❌ ไม่มีตัวอย่าง", key=f"noplay_dj_{i}", disabled=True, use_container_width=True)
+                        st.button("🔇 ไม่มีเสียง", key=f"noplay_dj_{i}", disabled=True, use_container_width=True)
                 
                 with btn_c2:
                     is_fav = any(f['name'] == track_info['name'] for f in st.session_state.favorites)
-                    if st.button("❤️" if is_fav else "🤍", key=f"fav_dj_{i}", use_container_width=True):
+                    if st.button("❤️️" if is_fav else "🤍", key=f"fav_dj_{i}", use_container_width=True):
                         if is_fav:
                             st.session_state.favorites = [f for f in st.session_state.favorites if f['name'] != track_info['name']]
                         else:
@@ -437,25 +421,26 @@ if nav_choice == "🎧 AI DJ Studio":
                     st.link_button("🟢 Spotify", track_info.get('spotify_url', '#'), use_container_width=True)
 
 # ------------------------------------------
-# PAGE 2: 🎵 สำรวจเพลงตามอารมณ์ (หน้าใหม่ SPOTIFY GRID)
+# PAGE 2: 🎵 สำรวจเพลงตามอารมณ์ (DYNAMIC LIVE FETCHING)
 # ------------------------------------------
 elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์":
     st.subheader("🎵 สำรวจเพลงตามหมวดหมู่อารมณ์ (Spotify Visual Grid)")
-    st.caption("เลือกฟีลลิ่งของคุณเพื่อค้นพบเพลงเด็ดๆ พร้อมกดฟังตัวอย่างเพลงได้ทันที")
+    st.caption("เลือกฟีลลิ่งของคุณเพื่อดึงรูปและฟังเพลงสดใหม่จาก API ทันที")
 
     selected_mood = st.selectbox(
         "🎯 เลือกหมวดหมู่อารมณ์ที่ต้องการค้นหา:",
-        list(MOOD_PRESETS.keys())
+        list(MOOD_PRESETS_SEEDS.keys())
     )
 
-    st.markdown(f"#### 📂 เพลงในหมวดหมู่: `{selected_mood}`")
+    st.markdown(f"#### 📂 เพลงแนะนำสดใหม่ในหมวดหมู่: `{selected_mood}`")
     
-    songs_in_mood = MOOD_PRESETS[selected_mood]
-    
-    # แสดงผลเป็น Grid 4 คอลัมน์ต่อแถว แบบ Spotify UI
+    seeds = MOOD_PRESETS_SEEDS[selected_mood]
     grid_cols = st.columns(4)
     
-    for idx, song in enumerate(songs_in_mood):
+    for idx, seed in enumerate(seeds):
+        # ดึงข้อมูลสดผ่าน API เสมอเพื่อป้องกันลิงก์รูป/เสียงหมดอายุ
+        song = fetch_live_track_info(seed['title'], seed['artist'], seed['tag'])
+        
         with grid_cols[idx % 4]:
             st.markdown(f"""
             <div class="spotify-card">
@@ -471,7 +456,7 @@ elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์"
             p_col1, p_col2 = st.columns([1.5, 1])
             with p_col1:
                 if song.get('preview'):
-                    if st.button("▶️ เล่นตัวอย่าง", key=f"grid_play_{selected_mood}_{idx}", use_container_width=True):
+                    if st.button("▶️ ฟังตัวอย่าง", key=f"grid_play_{selected_mood}_{idx}", use_container_width=True):
                         st.session_state.current_preview_url = song['preview']
                         st.session_state.current_track_name = song['name']
                         st.rerun()
@@ -489,12 +474,13 @@ elif nav_choice == "🎵 สำรวจเพลงตามอารมณ์"
                             'artist': song['artist'],
                             'album_cover': song['cover'],
                             'preview_url': song.get('preview'),
+                            'spotify_url': song['spotify_url'],
                             'reason': f"เพลงแนะนำจากหมวด {selected_mood}"
                         })
                     st.rerun()
 
 # ------------------------------------------
-# PAGE 3: 📊 สถิติ & บทวิเคราะห์ (ANALYTICS)
+# PAGE 3: 📊 สถิติ & บทวิเคราะห์
 # ------------------------------------------
 elif nav_choice == "📊 สถิติ & วิเคราะห์":
     st.subheader("📈 วิเคราะห์สถิติอารมณ์ของ Playlist")
@@ -514,9 +500,9 @@ elif nav_choice == "📊 สถิติ & วิเคราะห์":
         st.info("💡 สร้างเพลย์ลิสต์ในหน้า 'AI DJ Studio' ก่อน เพื่อดูการวิเคราะห์สถิติอารมณ์เพลง")
 
 # ------------------------------------------
-# PAGE 4: ❤️ เพลงโปรด & ประวัติ (FAVORITES & HISTORY)
+# PAGE 4: ❤️ เพลงโปรด & ประวัติ
 # ------------------------------------------
-elif nav_choice == "❤️️ เพลงโปรด & ประวัติ":
+elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
     st.subheader("❤️ เพลงโปรดที่คุณบันทึกไว้")
     if len(st.session_state.favorites) > 0:
         fav_cols = st.columns(3)
@@ -525,17 +511,24 @@ elif nav_choice == "❤️️ เพลงโปรด & ประวัติ":
                 st.markdown(f"""
                 <div class="spotify-card">
                     <div class="spotify-card-img-wrapper">
-                        <img src="{fav_track.get('album_cover', 'https://via.placeholder.com/300')}" class="spotify-card-img">
+                        <img src="{fav_track.get('album_cover', 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400')}" class="spotify-card-img">
                     </div>
                     <div class="spotify-card-title">{fav_track['name']}</div>
                     <div class="spotify-card-subtitle">{fav_track['artist']}</div>
                 </div>
                 """, unsafe_allow_html=True)
-                if fav_track.get('preview_url'):
-                    if st.button("▶️ ฟังเพลงนี้", key=f"fav_play_page_{idx}", use_container_width=True):
-                        st.session_state.current_preview_url = fav_track['preview_url']
-                        st.session_state.current_track_name = fav_track['name']
-                        st.rerun()
+                
+                f_col1, f_col2 = st.columns([1.2, 1])
+                with f_col1:
+                    if fav_track.get('preview_url'):
+                        if st.button("▶️ ฟังเพลงนี้", key=f"fav_play_page_{idx}", use_container_width=True):
+                            st.session_state.current_preview_url = fav_track['preview_url']
+                            st.session_state.current_track_name = fav_track['name']
+                            st.rerun()
+                    else:
+                        st.button("🔇 ไม่มีตัวอย่าง", key=f"fav_noplay_{idx}", disabled=True, use_container_width=True)
+                with f_col2:
+                    st.link_button("🟢 Spotify", fav_track.get('spotify_url', '#'), use_container_width=True)
     else:
         st.caption("ยังไม่มีเพลงโปรด กดหัวใจ ❤️ ที่การ์ดเพลงในหน้าต่างๆ เพื่อเพิ่มไว้ที่นี่ได้เลย")
 
@@ -552,7 +545,7 @@ elif nav_choice == "❤️️ เพลงโปรด & ประวัติ":
         st.caption("ยังไม่มีประวัติการจัดเพลย์ลิสต์ในเซสชันนี้")
 
 # ==========================================
-# 6. Floating Player (เล่นเพลงตัวอย่างลอยด้านล่าง)
+# 6. Floating Player
 # ==========================================
 if st.session_state.current_preview_url:
     with st.container(key="floating_player_box"):
