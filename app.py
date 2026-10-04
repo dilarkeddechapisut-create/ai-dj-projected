@@ -1512,7 +1512,7 @@ elif nav_choice == "❤️ เพลงโปรด & ประวัติ":
                 
                 f_col1, f_col2, f_col3 = st.columns([1.2, 0.8, 1])
                 with f_col1:
-                    if st.button("▶️ ฟังเพลงนี้", key=f"fav_play_page_{idx}", use_container_width=True):
+                    if st.button("▶️ ฟังตัวอย่าง", key=f"fav_play_page_{idx}", use_container_width=True):
                         st.session_state.current_preview_url = track_preview
                         st.session_state.current_track_name = fav_track['name']
                         st.rerun()
