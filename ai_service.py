@@ -10,7 +10,7 @@ def get_playlist_from_ai(mood_text, num_songs):
         return None
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-3.6-flash')
+    model = genai.GenerativeModel('gemini-3.5-flash')
 
     prompt = f"""
     ผู้ใช้มีความรู้สึกดังนี้: "{mood_text}"
